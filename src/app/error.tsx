@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useErrorCopy } from "@/components/error-copy";
-
+import Link from "next/link";
 /** Route error boundary: calm message, retry, and a way back. Never shows technical details. */
 export default function RouteError({
   reset,
@@ -26,9 +26,9 @@ export default function RouteError({
       <button type="button" className="btn btn-primary" onClick={() => reset()}>
         {copy.retry}
       </button>
-      <a href="/" className="btn btn-text self-start px-0">
+     <Link href="/" className="btn btn-text self-start px-0">
         {copy.home}
-      </a>
+     </Link>
     </main>
   );
 }
