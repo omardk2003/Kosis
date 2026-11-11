@@ -1,8 +1,14 @@
 # DISCIPLINE — Design System
 
-Owner: `ui-ux-designer` · Status: **v0.3, reviewed, pending owner approval** · 2026-11-11
+Owner: `ui-ux-designer` · Status: **v0.4, pending owner approval** · 2026-11-11
 
 ### Changelog
+- **v0.4:**
+  - §0: the owner chose Taste Skill **option A (distill, don't install)**. The skill is intentionally not installed.
+  - New §11: principles adapted from Taste Skill (MIT, attributed), with an explicit rejected list.
+  - §4: adds the layout tokens now in `src/styles/tokens.css` (`--form-max` 400 px, `--control-height` 48 px, `--measure` 62ch).
+  - §8: form-error pattern (no red; see §11.5).
+  - First screen specs: `docs/screens/sign-in.md`, `docs/screens/today-placeholder.md`.
 - **v0.3:** Resolves UI review blocking findings 1–6:
   - `--border-strong` token for 3:1 graphics contrast.
   - Full heatmap encoding table.
@@ -27,25 +33,21 @@ Owner: `ui-ux-designer` · Status: **v0.3, reviewed, pending owner approval** ·
 
 ## 0. Required skill: `design-taste-frontend`
 
-**Status: NOT installed** (re-checked 2026-11-11 for v0.2, in `.claude/skills/` and `~/.claude/skills/`). Installing it needs owner approval.
+**Status: intentionally NOT installed.** Owner decision (2026-11-11): **option A, "distill, don't
+install"**, from `docs/reviews/taste-skill-assessment-2026-11-11.md` §4.
 
 This is a third-party, MIT-licensed skill from
-[Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill). Several mirrors and forks exist
-under other names, so only use the original repo. **Install only after the owner approves and
-someone has reviewed its `SKILL.md`.**
+[Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill). Version 2.5.1 targets marketing
+sites, embeds a `Stop` hook that runs Node scripts and headless Chrome every turn, and ships
+153 scripts. So its text was read once, read-only, at commit `f6b7657`, and the principles that fit
+a calm habit app are written into **§11** in our own words. Nothing from the repo was installed,
+executed, or copied into `.claude/skills/`.
 
-```bash
-# Option A — skills CLI (fetches from GitHub via npx)
-npx skills add Leonxlnx/taste-skill --skill "design-taste-frontend"
-
-# Option B — manual, reviewable
-git clone https://github.com/Leonxlnx/taste-skill /tmp/taste-skill
-less /tmp/taste-skill/skills/*/SKILL.md          # review first
-mkdir -p .claude/skills/design-taste-frontend
-cp -r /tmp/taste-skill/skills/<folder>/. .claude/skills/design-taste-frontend/
-```
-Restart Claude Code afterward. Pin to a reviewed commit SHA. If the skill conflicts with
-this document, **this document wins** for DISCIPLINE.
+- When an agent's instructions say "invoke `design-taste-frontend`", the call is expected to fail.
+  Use **§11** as the substitute. No install instructions are kept here on purpose.
+- Re-evaluating (option B, a text-only vendored copy, or C) needs a new owner decision and a fresh
+  security review. Only the original repo counts; mirrors and forks under other names don't.
+- If anything in §11 conflicts with §1–§10, **§1–§10 win**.
 
 ## 1. Design direction
 **"Quiet instrument."** A well-made tool: warm paper-like neutrals, one confident accent,
@@ -94,6 +96,8 @@ Status is never conveyed by color alone. Use shape too:
 ## 4. Spacing, layout, shape
 - 4 px base grid. Spacing tokens: 4, 8, 12, 16, 24, 32, 48, 64.
 - Mobile gutter 16 px, max content width 640 px (single column even on desktop for Today).
+  Short forms (sign-in) use a 400 px column (`--form-max`). Running text is capped at 62ch (`--measure`).
+- Text inputs and the OTP field are 48 px tall (`--control-height`), with 16 px text so iOS never zooms.
 - Radii: 8 (controls), 14 (cards), 999 (pills). Elevation: hairline borders by default, one
   soft shadow level for the Action Mode sheet only.
 - Thumb zone: on mobile, Today's primary action **docks above the bottom navigation**. In DOM and focus order it comes right after the page heading (spec AC-D1). Sticky bottom navigation with ≤ 3 tabs: **Today · Progress · Habits**.
@@ -164,8 +168,13 @@ Status is never conveyed by color alone. Use shape too:
 | Success | Brief inline confirmation or toast. No modal |
 | Offline | Quiet banner. Data already loaded stays visible with "Last updated <time>". Start, Resume, "Log a past day" and settings toggles are disabled with the reason ("You're offline. This needs a connection."). A cold start offline shows the shell plus "You're offline. Connect to see your habits." |
 
+**Form errors** never use `--danger` (it's reserved for destructive actions) and never rely on color.
+The pattern: the field gets a 2 px `--text` border and `aria-invalid="true"`. The message sits
+directly under the field in `--text`, preceded by a 16 px "info" glyph (circle with "i", `aria-hidden`),
+and is linked with `aria-describedby`. See §11.5.
+
 **Screen-specific states:**
-- **Sign-in:** wrong code, expired code, resend cooldown ("You can request a new code in 45 s"), rate-limited. Copy never reveals whether an email is registered.
+- **Sign-in:** wrong code, expired code, resend cooldown ("You can request a new code in 45 s"), rate-limited, CAPTCHA failed, service unavailable. Copy never reveals whether an email is registered. Full spec: `docs/screens/sign-in.md`.
 - **Onboarding:** timezone detection failed. Show a searchable list.
 - **Settings:** export preparing / ready / error. Delete account: the code step. Week start is shown read-only with the reason "Set during onboarding".
 
@@ -175,7 +184,8 @@ Calm, direct, kind, brief. "Workout was quiet last week. Want to get back on tra
 should have, streak, don't lose, catch up, just 1 more*. Sentence case everywhere.
 
 ## 10. Screens to spec (docs/screens/)
-- sign-in (email → 6-digit code)
+- sign-in (email → 6-digit code) — **specced** (`docs/screens/sign-in.md`)
+- today-placeholder (walking skeleton only) — **specced** (`docs/screens/today-placeholder.md`)
 - onboarding (≤ 2 steps: confirm timezone and week start, then first habit name + goal)
 - today
 - action-mode
@@ -188,3 +198,112 @@ should have, streak, don't lose, catch up, just 1 more*. Sentence case everywher
 - settings (quotes, recovery, timezone, export, sign out, delete account)
 
 **Token ownership:** `src/styles/tokens.css` is written only by `ui-ux-designer`. The frontend consumes it and requests changes via `docs/handoffs/`.
+
+## 11. Principles adapted from Taste Skill
+
+> Adapted from tasteskill by Leonxlnx (MIT), https://github.com/Leonxlnx/taste-skill, commit f6b7657.
+> Copyright (c) 2026 Leonxlnx. Used under the MIT License. The wording below is our own paraphrase;
+> no code, assets, or scripts from that repository are used.
+
+The source is written for marketing websites. Only principles that hold for a calm, mobile-first
+**app** are kept. Each one is mapped to what it means in DISCIPLINE. §1–§10 win on any conflict.
+
+### 11.1 One system, one of each
+**Principle.** A product looks deliberate when every screen draws from one small set: one button
+family, one radius scale, one link style, one card recipe, one hairline. Boxes nest two levels at most.
+**In DISCIPLINE.**
+- `src/styles/tokens.css` is the only source of color, spacing, radius, type, and motion values.
+  Components never hard-code a hex value or a pixel radius.
+- Buttons: **primary** (accent fill), **secondary** (outline, `--border-strong`), **text**. No fourth style,
+  no ghost, gradient, or shadowed buttons.
+- Inline Cards never contain another card. A habit row is a row, not a card.
+
+### 11.2 Exactly one filled control per view
+**Principle.** One filled button marks the main action. Everything else steps down.
+**In DISCIPLINE.** This reinforces the "one primary action" rule (§4, AC-D1). `--accent` fill appears
+on one control per view. The Action Mode hierarchy (Done filled, minimum outline, Not now text) follows it.
+The same action label never appears twice on one screen.
+
+### 11.3 A neutral interface with one sparing accent
+**Principle.** The UI stays overwhelmingly neutral. A single accent carries the main action, focus, and
+state, and stays rare elsewhere. Ink is a warm near-black, never pure `#000`.
+**In DISCIPLINE.** Already our direction (§1, §2). `--accent` is reserved for the primary action and
+"done" marks. Emphasis comes from weight and size, not colored highlights behind words.
+
+### 11.4 Readable type, quiet labels
+**Principle.** Text people read is at least 16 px with a line height of 1.5 or more, and lines stay
+around 60 characters. Muted color is for meta (dates, labels), not for sentences. Nothing is smaller
+than 13 px. Sentence case; no tracked all-caps labels. A number never wraps away from its unit.
+**In DISCIPLINE.**
+- Body is `--text-md` (16 px) in `--text`. `--text-muted` only for meta like "2 of 3 this week".
+- `--text-xs` (13 px) is the floor. `--measure` caps paragraphs at 62ch.
+- Use non-breaking spaces inside values like "8 of 10" and "45 s" so they never split across lines.
+- Tabular numerals for all stats (§3).
+
+### 11.5 Forms that respect the person typing
+**Principle.** Labels are visible and sit above their fields; a placeholder is never the label. Fields use
+the right type and autocomplete. Validate on submit, not while typing. Each error sits under its field,
+names what to fix, and is wired to the field programmatically. Focus moves to the first problem. One
+status line announces progress. Success is shown only after the server confirms. Nothing typed is lost
+on failure. Input text is 16 px.
+**In DISCIPLINE.** This is the sign-in recipe (`docs/screens/sign-in.md`) and the default for every later
+form (habit create/edit, reflection, delete confirmation). Errors follow the §8 form-error pattern,
+never `--danger`.
+
+### 11.6 Motion with a reason, and nothing that moves on its own
+**Principle.** Each motion has a stated purpose. Animate transform and opacity only, never width, height,
+or margin. Eases settle without overshoot or bounce. Nothing reveals, staggers, or parallaxes on scroll.
+No carousels, auto-advancing elements, or rotating notices. Hover effects apply only to fine pointers,
+and every hover state is also reachable by focus and tap. The focus ring never animates. Content is
+complete at rest and under reduced motion.
+**In DISCIPLINE.** Our motion list (§5) is already small: the completion check, sheet open/close, toast
+in/out, press feedback (`--press-scale`). Every one of them must name its purpose in the screen spec.
+`--ease-standard` has no overshoot. Under `prefers-reduced-motion`, scale tokens drop to 1.
+
+### 11.7 Focus is always visible and never hidden
+**Principle.** Keyboard focus shows instantly, in full, and is never covered by a fixed header or bar. Tab
+order equals reading order; no positive `tabindex`. Every control has an accessible name.
+**In DISCIPLINE.** The docked primary action and the bottom navigation must never cover a focused element
+(WCAG 2.2 SC 2.4.11). Content gets bottom padding equal to the docked stack height, and focused items
+scroll into view above it.
+
+### 11.8 Fixed chrome stays still
+**Principle.** A sticky bar looks the same at every scroll position: no shrinking, blurring, hiding, or
+color flipping, and it never covers content.
+**In DISCIPLINE.** The bottom navigation and the docked primary action are opaque `--bg` with a top
+`--border` hairline, and never use glass or blur. They don't auto-hide on scroll.
+
+### 11.9 Fast and stable by default
+**Principle.** Small font budget, space reserved for everything that loads so the layout never jumps,
+no intro screens or loaders that gate reading.
+**In DISCIPLINE.** ≤ 2 font files on the critical path (§3). Skeletons match final layout (§8), so
+layout shift stays under 0.1. No splash or "welcome" interstitial.
+
+### 11.10 Plain, specific words
+**Principle.** Say what a thing is in words a stranger gets in seconds. Buttons are a verb plus an
+object; never "Learn more" or "Click here". Headings name things. The interface never talks about
+itself ("Below you'll find…"). Facts replace adjectives. Watch for over-correction: a calm vocabulary
+("quietly", "steady", "honest") can itself become a repeated tic.
+**In DISCIPLINE.** Copy is owned by `behavioral-product-specialist` (§9, product-spec §9). Design flags
+copy that breaks this in UI reviews; for example, avoid using "quiet" in many different strings.
+
+### 11.11 Never invent
+**Principle.** No invented reviews, quotes, customers, or figures.
+**In DISCIPLINE.** This matches product rules 3 and 7: no demo data in real accounts, and quotes only with
+recorded provenance. Empty states say what will appear, never show sample numbers.
+
+### 11.12 Rejected, and why
+| Taste Skill principle | Why it's rejected for DISCIPLINE |
+|---|---|
+| Hero sections, "one section per screen", a hard fact on the first screen | Marketing-page structure. An app screen leads with its primary action. |
+| Real or stand-in photography, full-color third-party icons | No photography in the product; icons are monochrome line glyphs. Stock imagery adds noise and licensing risk (rule 7). |
+| Shader/WebGL effects, big scenes, "dealt moments" | Decorative effects contradict the "quiet instrument" direction and the performance budget. |
+| A mandatory hero entrance animation on load | Delays the < 5 s "open to doing" goal (§4.3). Today renders at rest. |
+| Count-up numbers and looping card animations | Animating stats reads as gamified, and can briefly show wrong values. Numbers render final. |
+| Mandatory hover lift on cards, photo zoom on hover | Mobile-first touch UI; rows and cards are not hover targets. Only button press feedback is kept. |
+| Randomly "dealing" palettes, layouts, radii, and logo marks per page | We want one stable system across every screen, not variety. |
+| Dark mode only for tech pages | Dark is first class here and follows the OS setting. |
+| Navigation mega-menus, footers, phone action bar tied to hero scroll, share/OG rules | Website chrome. The app uses ≤ 3 bottom tabs. |
+| Word-count budgets per screen | Website rule. Our copy rule is "brief" (§9), checked by review. |
+| Automated checker/gate scripts and the `Stop` hook | Not installed (§0). Our checks are axe, Playwright, and copy-lint from `docs/testing-strategy.md`. |
+| "No violet" as an absolute color rule | Not needed as a rule; our palette is fixed in §2 and has no violet. |

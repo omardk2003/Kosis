@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "title": "DISCIPLINE",
+    "description": "A calm habit app. Take the next small step, see honest progress, and pick up again after a missed day."
+  },
+  "common": {
+    "appName": "DISCIPLINE",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "offlineBanner": "You're offline. You can look around, but changes need a connection.",
+    "languageLabel": "Language",
+    "languageEnglish": "English",
+    "languageDanish": "Dansk",
+    "skipToContent": "Skip to main content"
+  },
+  "home": {
+    "tagline": "Less planning. More doing. Less pressure. More progress.",
+    "getStarted": "Get started"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "emailLabel": "Email",
+    "emailHint": "We'll send you a 6-digit code. No password needed.",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "codeSentNeutral": "If this email can sign in, we've sent a 6-digit code.",
+    "codeLabel": "6-digit code",
+    "verify": "Sign in",
+    "verifying": "Checking…",
+    "resend": "Send a new code",
+    "resendIn": "You can request a new code in {seconds} s",
+    "useDifferentEmail": "Use a different email",
+    "signedOut": "You're signed out.",
+    "sessionEnded": "Your session has ended. Sign in again to continue.",
+    "captchaLabel": "Security check",
+    "errors": {
+      "invalidEmail": "Enter an email address like name@example.com.",
+      "badCode": "That code doesn't match. Check it and try again.",
+      "expiredCode": "This code has expired. Request a new one.",
+      "rateLimited": "Too many attempts. Wait a moment, then try again.",
+      "captchaFailed": "The security check didn't go through. Try again.",
+      "unavailable": "We can't sign you in right now. Try again in a few minutes.",
+      "offline": "You're offline. Connect to the internet to sign in."
+    }
+  },
+  "today": {
+    "title": "Today",
+    "placeholder": "Your habits will appear here soon. Nothing to do yet.",
+    "signedIn": "You're signed in.",
+    "signOut": "Sign out",
+    "offlineSignOut": "Signing out needs a connection. Try again when you're online."
+  },
+  "offline": {
+    "title": "You're offline",
+    "body": "You're offline. Connect to see your habits."
+  },
+  "notFound": {
+    "title": "This page doesn't exist",
+    "back": "Go to the start page"
+  }
+}

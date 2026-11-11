@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "title": "DISCIPLINE",
+    "description": "En rolig vaneapp. Tag det næste lille skridt, se ærlige fremskridt, og kom i gang igen efter en dag, der ikke blev til noget."
+  },
+  "common": {
+    "appName": "DISCIPLINE",
+    "loading": "Indlæser…",
+    "retry": "Prøv igen",
+    "offlineBanner": "Du er offline. Du kan godt kigge rundt, men ændringer kræver forbindelse.",
+    "languageLabel": "Sprog",
+    "languageEnglish": "English",
+    "languageDanish": "Dansk",
+    "skipToContent": "Gå til hovedindhold"
+  },
+  "home": {
+    "tagline": "Mindre planlægning. Mere handling. Mindre pres. Mere fremgang.",
+    "getStarted": "Kom i gang"
+  },
+  "signIn": {
+    "title": "Log ind",
+    "emailLabel": "E-mail",
+    "emailHint": "Vi sender dig en kode på 6 cifre. Du behøver ingen adgangskode.",
+    "sendCode": "Send kode",
+    "sending": "Sender…",
+    "codeSentNeutral": "Hvis denne e-mail kan logge ind, har vi sendt en kode på 6 cifre.",
+    "codeLabel": "Kode på 6 cifre",
+    "verify": "Log ind",
+    "verifying": "Tjekker…",
+    "resend": "Send en ny kode",
+    "resendIn": "Du kan bede om en ny kode om {seconds} s",
+    "useDifferentEmail": "Brug en anden e-mail",
+    "signedOut": "Du er logget ud.",
+    "sessionEnded": "Din session er udløbet. Log ind igen for at fortsætte.",
+    "captchaLabel": "Sikkerhedstjek",
+    "errors": {
+      "invalidEmail": "Skriv en e-mailadresse, fx navn@eksempel.dk.",
+      "badCode": "Koden passer ikke. Tjek den, og prøv igen.",
+      "expiredCode": "Koden er udløbet. Bed om en ny.",
+      "rateLimited": "For mange forsøg. Vent lidt, og prøv så igen.",
+      "captchaFailed": "Sikkerhedstjekket gik ikke igennem. Prøv igen.",
+      "unavailable": "Vi kan ikke logge dig ind lige nu. Prøv igen om et par minutter.",
+      "offline": "Du er offline. Opret forbindelse til internettet for at logge ind."
+    }
+  },
+  "today": {
+    "title": "I dag",
+    "placeholder": "Dine vaner vises her snart. Der er ikke noget at gøre endnu.",
+    "signedIn": "Du er logget ind.",
+    "signOut": "Log ud",
+    "offlineSignOut": "Du skal have forbindelse for at logge ud. Prøv igen, når du er online."
+  },
+  "offline": {
+    "title": "Du er offline",
+    "body": "Du er offline. Opret forbindelse for at se dine vaner."
+  },
+  "notFound": {
+    "title": "Siden findes ikke",
+    "back": "Gå til forsiden"
+  }
+}

@@ -47,6 +47,8 @@ Owner: `lead-architect` · Status: **v0.3, reviewed, pending owner approval** ·
 | Validation | **zod** in server actions (UX-level), with the **database as the authority** | Duplicate checks in the app only give friendlier errors. |
 | Client data | **RSC + server actions + `useOptimistic`**. **No TanStack Query.** | One data approach, and a smaller bundle (finding 9). |
 | Dates | **No date library.** Local dates are epoch-day integers. "Now → local date" uses `Intl.DateTimeFormat` with the profile timezone. | The domain only needs date-only arithmetic, so the Temporal polyfill's bundle cost isn't worth it. |
+| i18n | **next-intl** without locale URL prefixes. The locale comes from a cookie, then `Accept-Language`, with EN as the default. Messages live in `content/messages/{en,da}.json` and are rendered in server components (ADR-0009) | Owner decision D6. Server-first, so it adds little client JS |
+| CAPTCHA | **Cloudflare Turnstile**, using Supabase Auth's built-in CAPTCHA (`captchaToken` on `signInWithOtp`), so the token is verified server-side by Supabase. The widget is `@marsidev/react-turnstile` and appears on the sign-in step only | Owner decision D5. A single verification, because Turnstile tokens are single-use |
 | Charts | **Hand-rolled SVG** | Two simple charts, with full control over honest rendering. |
 | PWA | Web app manifest + **hand-written `src/sw.ts`** (no Serwist) | Caches only static, non-personal assets (the app shell). No personal data on the device. No offline writes in MVP. |
 | Tests | Vitest, Testing Library, fast-check, Playwright, axe-core, pgTAP or SQL tests against a local Supabase | See testing-strategy.md. |
@@ -330,8 +332,8 @@ All functions are pure and deterministic. `today` and `weekStart` are always pas
 Pinned in `supabase/config.toml` and the production dashboard, with values to verify against the current Supabase docs in ADR-0006:
 - **OTP:** 6 digits, **expiry ≤ 600 s**, and at least **60 s** between sends to the same email.
 - **Rate limits:** low per-hour caps on sends and verifies.
-- **CAPTCHA** on the send step (*owner choice D5: Turnstile or hCaptcha*).
-- **Custom SMTP** in production (*D4*). The email template uses `{{ .Token }}`, not a link.
+- **CAPTCHA** on the send step: **Cloudflare Turnstile** (D5). Supabase Auth verifies the token against Cloudflare siteverify. Our server action never calls siteverify itself, because a token can be verified only once. Locally the CAPTCHA is disabled. Staging uses Cloudflare's always-pass test keys, and production uses real keys stored in Supabase and Vercel (site key only).
+- **Custom SMTP** in production (D4: EU provider, recommended Scaleway TEM; see `docs/decisions/email-provider-comparison.md`). The email template uses `{{ .Token }}`, not a link.
 - `signInWithOtp({ shouldCreateUser: true })` handles sign-in and sign-up the same way. The UI response is identical for known and unknown emails ("If this email can sign in, we've sent a code"), and rate-limit errors don't reveal whether an email is registered.
 - The site URL and redirect allowlist are limited to the production domain and **team-scoped** preview patterns. No `*.vercel.app` wildcard.
 - **Sessions:** only server-side Supabase clients, with cookies via `@supabase/ssr`. There's no browser Supabase client, so cookies can stay httpOnly.
@@ -394,3 +396,4 @@ Pinned in `supabase/config.toml` and the production dashboard, with values to ve
 | 0006 | DB-only write path (RPCs, grants, RLS) |
 | 0007 | Environments and migration deployment (§9) |
 | 0008 | Service worker and offline policy (§7.3) |
+| 0009 | Internationalization (EN/DA) |

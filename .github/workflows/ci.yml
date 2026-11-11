@@ -1,0 +1,64 @@
+name: CI
+
+# Phase 0 CI (ADR-0007). Runs only against the local Supabase stack inside the runner.
+# Never uses staging or production credentials. No deploy steps.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - name: Unit tests, i18n parity and copy-lint
+        run: npx vitest run
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start local Supabase (auth, db, rest, mail only)
+        run: npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,storage-api,supavisor,postgres-meta
+      - name: Export local Supabase env
+        run: |
+          npx supabase status -o env > .supabase.env
+          echo "NEXT_PUBLIC_SUPABASE_URL=$(grep '^API_URL=' .supabase.env | cut -d= -f2- | tr -d '"')" >> "$GITHUB_ENV"
+          KEY=$(grep -E '^(PUBLISHABLE_KEY|ANON_KEY)=' .supabase.env | head -1 | cut -d= -f2- | tr -d '"')
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$KEY" >> "$GITHUB_ENV"
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Bundle budget (≤110 KB internal target)
+        run: npm run check:bundle
+      - name: Playwright (smoke + auth)
+        run: npx playwright test --trace off
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

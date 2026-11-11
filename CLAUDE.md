@@ -7,14 +7,16 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 ## Current status
 
-- **Phase:** Specification v0.3 (reviewed by all agents, pending owner approval). No application code exists yet.
+- **Phase:** **Phase 0** (foundation) approved and in progress. Specs v0.3 are approved for D1–D6. The §10.2 defaults are still open and must be confirmed before Phase 1.
 - **Owner decisions (2026-11-11):**
   - Mobile-first PWA, with native apps possible later.
   - Supabase Auth is required from launch.
   - Late logging is allowed up to 7 days back.
   - Product name: DISCIPLINE. Repository name: Kosis.
-- **Gate:** No feature implementation until the owner approves v0.3, the proposed defaults in
-  `docs/product-spec.md` §10.2, and decisions D1–D3 in §10.3.
+- **Gate:** Phase 0 only: ADRs, configuration, CI, tooling, and the scaffold (shell, i18n, auth
+  skeleton). **No domain features or habit tables** until the owner approves Phase 1.
+- **Languages:** English (default) and Danish. Every user-facing string goes in
+  `content/messages/{en,da}.json`.
 - Source of truth, in order: `docs/product-spec.md` → `docs/architecture.md` →
   `docs/design-system.md` → `docs/testing-strategy.md` → `docs/mvp-roadmap.md`.
   If the code and the docs disagree, stop and flag it. Don't silently "fix" either one.
@@ -91,4 +93,16 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 ## Commands
 
-_To be filled in once the stack is approved (see `docs/architecture.md` §2)._
+Node 22 (see `.nvmrc`). Local Supabase needs Docker.
+
+| Purpose | Command |
+|---|---|
+| Install | `npm ci` |
+| Local Supabase | `npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,storage-api,supavisor,postgres-meta` |
+| Dev server | `npm run dev` |
+| Typecheck / lint / format | `npm run typecheck` · `npm run lint` · `npm run format:check` |
+| Unit tests + copy-lint + i18n parity | `npx vitest run` |
+| Build + bundle budget | `npm run build` · `npm run check:bundle` |
+| E2E (360×640 + desktop) | `npx playwright test --trace off` |
+
+Messages: `content/messages/{en,da}.json` (identical keys). Next 16 request hook: `src/proxy.ts`.

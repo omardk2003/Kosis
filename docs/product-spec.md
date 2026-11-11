@@ -232,6 +232,12 @@ Purpose: shrink the gap between a lapse and the next action. It's optional and n
 - **AC-X2** Every screen defines loading, empty, error, success, and offline states (design-system §8).
 - **AC-X3** **Data export:** JSON of everything (habits, goal versions, status events, timezone history, entries, voids, reflections, settings), plus a CSV of entries. The export is complete, never truncated. CSV cells starting with `= + - @` are escaped.
 - **AC-X4** Offline in MVP is **read-only**. The service worker caches only the static app shell. **No personal data is persisted on the device.** Data already loaded in the open session stays visible with "Last updated <time>". A cold start while offline shows the shell plus "You're offline. Connect to see your habits." Writes need a connection, and the UI says so.
+- **AC-X6** **Languages:** English (default) and Danish.
+  - The locale comes from the user's choice (a cookie, and later the profile), then `Accept-Language`, then English.
+  - All UI strings live in `content/messages/{en,da}.json` with identical keys. No hard-coded user-facing text.
+  - Dates and numbers are formatted by locale through `Intl`.
+  - The banned-word rule (§9) applies to both languages.
+  - The OTP email exists in both languages.
 - **AC-X5** Sync: changes appear on another signed-in device on its next load or focus. Real-time push is not required.
 
 ## 5. Out of scope for MVP
@@ -317,7 +323,7 @@ Calm, direct, kind, brief. Second person, sentence case. No exclamation marks in
 | Q7 | Daily quote? | **In scope, off by default.** Original or public-domain only. |
 | Q8 | Data export? | **Yes:** JSON plus CSV of entries. |
 | Q9 | Reminders? | **None in MVP.** |
-| Q10 | Language and week start? | **Language: owner input needed.** English is recommended for MVP, with all strings externalized so Danish can follow. Week start comes from the locale (Monday in DK) and is fixed after onboarding in MVP. |
+| Q10 | Language and week start? | **Decided (D6):** English (default) and Danish from the first release, through a real i18n system. Week start comes from the locale (Monday in DK) and is fixed after onboarding in MVP. |
 | Q11 | Brand assets? | None until provided. The design-system direction applies. |
 | Q12 | Should `weekly_count` count distinct days? | **Yes** (§7.2). |
 | Q13 | Recovery cards? | One at a time. |
@@ -325,12 +331,14 @@ Calm, direct, kind, brief. Second person, sentence case. No exclamation marks in
 | Q15 | Keep the feeling rating? | Yes, optional and never charted. |
 | Q16 | Sign-in method? | Email one-time code. Apple and Google sign-in come post-MVP. |
 
-### 10.3 Decisions from the v0.2 review (owner: approve)
-See `docs/reviews/v0.2-consolidated-2026-11-11.md` §6.
-| ID | Decision | Default in this spec |
+### 10.3 Decisions from the v0.2 review (owner-approved 2026-11-11)
+| ID | Decision | Status |
 |---|---|---|
-| D1 | Pause and archive take effect tomorrow | Adopted (AC-H4/H5/H8) |
-| D2 | Conservative "today" for 24 h after a timezone change | Adopted (§3, AC-O3) |
-| D3 | Staging environment | A separate Supabase project, created by the owner (architecture §9) |
-| D4 | Production email provider for OTP | Owner to choose (EU-based) |
-| D5 | CAPTCHA on OTP send | Owner to choose (Turnstile or hCaptcha) |
+| D1 | Pause and archive take effect tomorrow | **Approved** (AC-H4/H5/H8) |
+| D2 | Conservative "today" for 24 h after a timezone change | **Approved** (§3, AC-O3) |
+| D3 | Staging environment | **Approved:** a separate Supabase staging project. Production is never touched. Runbook in `docs/runbooks/staging-setup.md` |
+| D4 | Production email provider for OTP | **Approved approach:** a secure, affordable, EU-hosted provider, chosen after comparison (`docs/decisions/email-provider-comparison.md`, recommending Scaleway TEM). Not required for local development |
+| D5 | CAPTCHA on OTP send | **Approved:** Cloudflare Turnstile, verified server-side by Supabase Auth (ADR-0006), plus rate limits |
+| D6 | Language | **Approved:** EN (default) + DA through an i18n system from the start (ADR-0009) |
+
+**Still open:** the remaining proposed defaults in §10.2 (Q3 specific_days, Q4 streaks, Q5 Pause, Q7 quotes, Q8 export, Q9 reminders, Q11 brand, Q13–Q16). Phase 0 doesn't depend on them. They must be confirmed before Phase 1.
