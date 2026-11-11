@@ -30,10 +30,10 @@ Owner: `lead-architect` · Status: **v0.3, reviewed, pending owner approval** ·
 - **v0.1:** Initial draft.
 
 ## 1. Current state
-- **Repository:** `omardk2003/Kosis` holds the docs and agent configuration only. There's no application code yet.
+- **Repository:** `omardk2003/Kosis`. Phase 0 scaffold on PR #1: Next.js 16 PWA shell, EN/DA, email-OTP auth against local Supabase, CI. No domain features yet.
 - **Supabase:** the existing project **"Kosis Project"** (eu-west-1, Postgres 17) is treated as **production**. As of 2026-11-11 it has no tables and no migrations. Agents must not run write SQL or apply migrations against it (§9).
 
-## 2. Stack (v0.2: owner-approved in principle, details pending ADR-0001)
+## 2. Stack (approved; versions pinned in ADR-0001)
 
 | Concern | Choice | Why |
 |---|---|---|
@@ -66,7 +66,6 @@ src/
   app/                 # routes, layouts, manifest.ts                             (frontend-engineer)
   components/          # shared UI primitives                                     (frontend-engineer)
   features/<name>/ui/  # feature UI only; features/* contains nothing but ui/     (frontend-engineer)
-  sw.ts                # service worker                                           (frontend-engineer)
   styles/tokens.css    # design tokens: SOLE writer                               (ui-ux-designer)
   styles/*.css         # other styles                                             (frontend-engineer)
 src/proxy.ts           # Next 16 request hook (ex-middleware): CSP nonce, session refresh, redirects (backend-engineer)
@@ -366,7 +365,7 @@ Pinned in `supabase/config.toml` and the production dashboard, with values to ve
 
 ## 8. Performance budgets
 - **Initial JS budget: ≤ 150 KB gzip per route (hard CI limit)**, counting what a modern browser downloads. `noModule` polyfills are excluded.
-  - **Measured in Phase 0:** an empty Next.js 16.4.6 + React 19.3.1 App Router app is about 132 KB. The scaffold is 135.4 KB (`/`) and 139.7 KB (`/sign-in`).
+  - **Measured in Phase 0:** an empty Next.js 16.4.6 + React 19.3.1 App Router app is about 132 KB. The scaffold is 136.0 KB (`/`) and 140.3 KB (`/sign-in`).
   - **App-owned client JS** must stay within about 20 KB of the framework baseline. This replaces the old 110 KB internal target, which can't be met with the approved stack (ADR-0001).
   - **Rules that keep it small:**
     - Translations are passed from the server as props, with no next-intl client runtime.

@@ -63,3 +63,29 @@ Record the decision as ADR-0010 once the owner approves.
 - Fix findings 1–4.
 - Owner: decide D7, approve architecture and roadmap v0.3 (still marked "pending"), confirm §10.2 Q3/Q5, and supply the staging ref (D3).
 - lead-architect: write `docs/handoffs/plan-phase1.md`.
+
+## Verification (93e29f7)
+Re-checked read-only on `claude/project-setup` @ `93e29f7`. I re-ran `check-bundle.mjs` against the local build.
+
+| # | Blocker | Status | Evidence |
+|---|---|---|---|
+| 1 | Bundle measurement | **RESOLVED** | `check-bundle.mjs:36-42` skips `nomodule` scripts, and the default limit is 150. My re-run measured `/` at 136.0 KB and `/sign-in` at 140.3 KB, so both pass. D7 is withdrawn. ADR-0001 and §8 record the 150 KB hard limit plus the "app JS ≤ ~20 KB over the baseline" rule. |
+| 2 | Offline and network failure on sign-in | **RESOLVED** | `sign-in-form.tsx:88,114,165,196-197` cancel submission with `preventDefault` while `blocked` (and, for resend, during the countdown). `src/app/error.tsx` uses server copy through `ErrorCopyProvider`, so there's no next-intl client runtime. `global-error.tsx` uses fixed bilingual text, a documented AC-X6 exception. |
+| 3 | Doc drift | **RESOLVED, with leftovers** | ADR-0001, ADR-0007, ADR-0009, §7.3, §8, the §3 `src/proxy.ts` and `src/i18n/` rows, and CLAUDE.md (status and Commands) are now aligned. A few stale lines remain, downgraded to NON-BLOCKING: `architecture.md:33` ("no application code yet"), `:36` ("pending ADR-0001"), `:69` (`sw.ts` row), `:369` (139.7, but the measured value is 140.3), and `ci.yml:60` (the "≤110 KB" label). lead-architect fixes them in the next docs pass. |
+| 4 | Review gates | **RESOLVED** | Security is PASS WITH FIXES with no blockers, and it covers the migration (M3). UI and product are APPROVE WITH CHANGES. The orchestrator reports their blockers fixed in `f823cd9`/`8b28f90`; I didn't re-verify that. Non-blocking items are in `docs/handoffs/2026-11-11-phase0-followups.md`. |
+
+Migration sign-off for `20261111180000_security_baseline.sql`: the security review passed, which met the condition, so the sign-off is now **unconditional**. M3 (`supabase_admin` default privileges) is tracked for Phase 1.
+
+**Updated verdict: APPROVE.** Non-blocking findings 5–13 remain open. Findings 9, 13 and 14 overlap with follow-ups 3, 5, 6 and 7.
+
+### Updated Phase 0 exit checklist
+- [ ] A blank app deploys to a Vercel preview. **Owner:** turn deployments on for one branch in `vercel.json` and finish the O4 environment-scope check.
+- [ ] CI is green on GitHub for `93e29f7`. **Owner:** confirm the run. It passes locally (typecheck, lint, format, 29 unit, 28 e2e, bundle).
+- [x] Bundle is ≤ 150 KB gzip per route: 136.0 / 140.3 KB.
+- [ ] Production secrets are scoped to Production only. **Owner:** dashboard check (O4).
+- [ ] Nothing has touched production. **Owner:** confirm.
+- [x] ADRs 0001–0009 are written and aligned.
+- [x] Scaffold, test harness, tokens and screen specs.
+- [x] Security, UI and product reviews are done, with blockers fixed.
+
+**Before Phase 1:** the owner confirms the §10.2 defaults (Q3, Q5 as corrected, Q16), approves architecture and roadmap v0.3, and supplies the staging ref (D3). lead-architect then writes `docs/handoffs/plan-phase1.md`.

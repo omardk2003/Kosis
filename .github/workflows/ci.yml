@@ -57,7 +57,7 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SRK" >> "$GITHUB_ENV"
       - run: npx playwright install --with-deps chromium
       - run: npm run build
-      - name: Bundle budget (≤110 KB internal target)
+      - name: Bundle budget (≤150 KB gzip per route, ADR-0001)
         run: npm run check:bundle
       - name: Playwright (smoke + auth)
         run: npx playwright test --trace off
