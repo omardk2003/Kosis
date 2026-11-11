@@ -49,3 +49,23 @@ Add the replace and pause cases to H20. This is a text-only fix.
 ### Non-blocking
 - In the grants block, the `grant execute on function private.*` lines must run after the helpers are created, or the migration fails.
 - `get_today` (§4.4) returns only `lo`. Add `hi` so that `lateLogEligibility` matches the DB window (`hi − 7`) and the on-time preview. Otherwise, in the 24 h after a timezone switch, the picker can offer a day the DB rejects.
+
+## Re-verification (V4)
+
+**V4: RESOLVED.** Evidence:
+- The §4.3 bound-rule preamble covers both cases: `lo` for upper bounds, and `hi` for lower bounds, on-time labels and plan removal.
+- The RPC rows are updated:
+  - `void_completion` and `replace_with_full`: `≥ hi − 7`
+  - `replace_with_full` source: `on_time` only if `d = hi`
+  - `set_habit_status`: `hi + 1` for pause/archive, `lo` for resume
+  - `change_goal`: computed from `hi`
+  - `upsert_reflection`: compared with `lo`
+- The §4.1 comment and the grant-ordering note are in place.
+- §4.4 `get_today` returns both `today` and `today_hi`.
+- H20 covers the replace case and the UTC+14 pause case.
+
+**No new blocking issues.**
+
+**Non-blocking:** the §6 signature `lateLogEligibility(habit, entries, today)` should also take `todayHi`, to match §4.4. Line 194 of §4.2 still says "`get_today` returns `lo`" without mentioning `today_hi`. Both are cosmetic and can be fixed during the Phase 1 contract work.
+
+**Verdict for architecture v0.3: APPROVE.** It's ready for owner approval of D1–D6 and the ADRs 0002/0003/0006, which are required before Phase 1.

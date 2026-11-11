@@ -191,7 +191,7 @@ All `created_at`, `logged_at`, `voided_at`, `effective_at` and `updated_at` valu
   - **Upper bounds use `lo`:** you can't log a day that hasn't started in every recent timezone.
   - **Lower bounds use `hi`:** the window is `hi − 7`, so a switch can't stretch the window backwards.
   - **`source = 'on_time'` only if `d = hi`:** otherwise it's `late`, so switching west can't relabel yesterday as on time.
-  - `get_today` returns `lo` as "today".
+  - `get_today` returns `lo` as `today` and `hi` as `today_hi`.
 
   Without a recent timezone change, `lo = hi` and nothing differs from the simple rule (AR-B2 and verification V1, *owner approval D2*).
 
@@ -320,7 +320,7 @@ heatmapCells(habit, entries, today, 12): CellState[][]    // AC-P3; the UI never
 todaySections(habits, entries, today, skippedToday): { primary; reason; due; optional; done; paused }  // AC-A1/A2, AC-D2
 detectLapse(habit, entries, today): { lapseKey; kind; copyVariant } | null  // AC-R1/R5
 summaryChangedSince(habit, entries, voids, week, ts): boolean  // AC-W2
-lateLogEligibility(habit, entries, today): Array<{ day; state: 'ok'|'replace-minimum'|'disabled'; reason? }>  // AC-L4
+lateLogEligibility(habit, entries, today, todayHi): Array<{ day; state: 'ok'|'replace-minimum'|'disabled'; reason?; willBeLate: boolean }>  // AC-L4; window todayHi−7 … today
 // all percentage and pro-rating math uses integer arithmetic
 ```
 All functions are pure and deterministic. `today` and `weekStart` are always passed in.
