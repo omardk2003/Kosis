@@ -1,12 +1,11 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useFormStatus } from "react-dom";
 import { useOnline } from "@/components/use-online";
 
-export function SignOutButton() {
-  const t = useTranslations("today");
-  const tc = useTranslations("common");
+type Props = { label: string; pendingLabel: string; offlineReason: string };
+
+export function SignOutButton({ label, pendingLabel, offlineReason }: Props) {
   const { pending } = useFormStatus();
   const online = useOnline();
   return (
@@ -19,9 +18,9 @@ export function SignOutButton() {
           if (!online || pending) event.preventDefault();
         }}
       >
-        {pending ? tc("loading") : t("signOut")}
+        {pending ? pendingLabel : label}
       </button>
-      {!online ? <p className="text-sm text-text-muted">{t("offlineSignOut")}</p> : null}
+      {!online ? <p className="text-sm text-text-muted">{offlineReason}</p> : null}
     </div>
   );
 }

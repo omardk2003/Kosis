@@ -50,6 +50,11 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_URL=$(grep '^API_URL=' .supabase.env | cut -d= -f2- | tr -d '"')" >> "$GITHUB_ENV"
           KEY=$(grep -E '^(PUBLISHABLE_KEY|ANON_KEY)=' .supabase.env | head -1 | cut -d= -f2- | tr -d '"')
           echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$KEY" >> "$GITHUB_ENV"
+          # Local-stack-only admin key (a fixed development key, not a project secret); used by
+          # e2e to pre-create a known user for the non-enumeration test.
+          SRK=$(grep -E '^(SERVICE_ROLE_KEY|SECRET_KEY)=' .supabase.env | head -1 | cut -d= -f2- | tr -d '"')
+          echo "::add-mask::$SRK"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SRK" >> "$GITHUB_ENV"
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - name: Bundle budget (≤110 KB internal target)

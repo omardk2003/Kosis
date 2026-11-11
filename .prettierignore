@@ -5,3 +5,7 @@ supabase/.temp
 playwright-report
 test-results
 docs
+.claude
+CLAUDE.md
+supabase/templates
+*.md

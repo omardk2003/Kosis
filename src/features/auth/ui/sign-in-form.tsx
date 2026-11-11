@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { signInStep, type SignInState } from "@/server/auth/actions";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -10,11 +9,40 @@ import { purgeAppCaches } from "./purge-caches";
 
 const RESEND_SECONDS = 60;
 
-type Props = { configured: boolean; turnstileSiteKey: string | null; purgeCaches: boolean };
+/** Pre-translated strings from the server (keeps next-intl's runtime out of the client bundle). */
+export type SignInCopy = Record<
+  | "emailLabel"
+  | "emailHint"
+  | "sendCode"
+  | "sending"
+  | "codeSentNeutral"
+  | "codeLabel"
+  | "verify"
+  | "verifying"
+  | "resend"
+  | "resendIn"
+  | "useDifferentEmail"
+  | "captchaLabel"
+  | ErrorKey
+  | "errors.offline"
+  | "offlineBanner",
+  string
+>;
 
-export function SignInForm({ configured, turnstileSiteKey, purgeCaches }: Props) {
-  const t = useTranslations("signIn");
-  const locale = useLocale();
+type Props = {
+  configured: boolean;
+  turnstileSiteKey: string | null;
+  purgeCaches: boolean;
+  locale: string;
+  copy: SignInCopy;
+};
+
+export function SignInForm({ configured, turnstileSiteKey, purgeCaches, locale, copy }: Props) {
+  const t = (key: keyof SignInCopy, values?: Record<string, string | number>) =>
+    Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replace(`{${name}}`, String(value)),
+      copy[key],
+    );
   const online = useOnline();
   const emailId = useId();
   const codeId = useId();
@@ -63,7 +91,7 @@ export function SignInForm({ configured, turnstileSiteKey, purgeCaches }: Props)
     return (
       <form action={action} className="flex flex-col gap-4" noValidate>
         <input type="hidden" name="intent" value="send" />
-        <OfflineBanner />
+        <OfflineBanner text={copy.offlineBanner} />
         <label htmlFor={emailId} className="font-medium">
           {t("emailLabel")}
         </label>
@@ -90,7 +118,7 @@ export function SignInForm({ configured, turnstileSiteKey, purgeCaches }: Props)
 
   return (
     <div className="flex flex-col gap-4">
-      <OfflineBanner />
+      <OfflineBanner text={copy.offlineBanner} />
       <p role="status">{t("codeSentNeutral")}</p>
       <form action={action} className="flex flex-col gap-4" noValidate>
         <input type="hidden" name="intent" value="verify" />

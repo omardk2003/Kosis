@@ -364,11 +364,15 @@ Pinned in `supabase/config.toml` and the production dashboard, with values to ve
   - A privacy policy exists before launch.
 
 ## 8. Performance budgets
-- Dashboard initial JS ≤ **150 KB gzip**. This is a **Phase 0 exit gate**, measured on the empty scaffold.
+- **Initial JS budget (revised in Phase 0, pending owner decision D7):**
+  - **Measured on 2026-11-11:** an empty Next.js 16.4.6 + React 19.3.1 App Router app ships **170.3 KB gzip** of JS. The original 150 KB budget can't be met with the approved stack.
+  - **Interim CI ceiling: 185 KB gzip per route**, which is the framework baseline plus about 15 KB of app code. The Phase 0 scaffold measures 174 KB (`/`) and 178 KB (`/sign-in`).
+  - The user-facing targets are unchanged: **LCP ≤ 2.0 s and INP ≤ 200 ms** on a mid-range phone over 4G, measured with Lighthouse CI from Phase 2.
+  - **Rule:** app-owned client JS stays minimal. Translations are passed from the server as props, with no next-intl client runtime. There's no browser Supabase client, and the Turnstile widget appears only on sign-in.
 - LCP ≤ 2.0 s and INP ≤ 200 ms on a Moto G-class device over 4G.
 - `supabase-js` and zod stay out of the client bundle. The client only calls server actions.
 - Today needs one RPC round trip, plus the session check. Local JWT verification (`getClaims`) avoids a second network call to Auth, to be verified in ADR-0001. Progress needs one bounded query, and its route is code-split.
-- Internal target: the scaffold's baseline JS is ≤ 110 KB gzip, leaving room under the 150 KB budget.
+
 - Optimistic completion feedback in < 100 ms.
 
 ## 9. Environments & Supabase safety

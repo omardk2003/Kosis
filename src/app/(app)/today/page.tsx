@@ -12,9 +12,10 @@ export default async function TodayPage() {
   const userId = await getVerifiedUserId();
   if (!userId) redirect("/sign-in");
   const t = await getTranslations("today");
+  const tc = await getTranslations("common");
   return (
     <main id="main" className="mx-auto flex min-h-dvh max-w-[640px] flex-col gap-6 px-4 py-8">
-      <OfflineBanner />
+      <OfflineBanner text={tc("offlineBanner")} />
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">{t("title")}</h1>
         <LanguageSwitch />
@@ -22,7 +23,11 @@ export default async function TodayPage() {
       <p className="text-text-muted">{t("placeholder")}</p>
       <p>{t("signedIn")}</p>
       <form action={signOut}>
-        <SignOutButton />
+        <SignOutButton
+          label={t("signOut")}
+          pendingLabel={tc("loading")}
+          offlineReason={t("offlineSignOut")}
+        />
       </form>
     </main>
   );

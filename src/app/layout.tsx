@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import "@/styles/globals.css";
@@ -34,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="skip-link">
           {t("skipToContent")}
         </a>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        {children}
         <ServiceWorkerRegister />
       </body>
     </html>
