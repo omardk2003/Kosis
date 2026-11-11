@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useErrorCopy } from "@/components/error-copy";
 import Link from "next/link";
+import { useErrorCopy } from "@/components/error-copy";
 /** Route error boundary: calm message, retry, and a way back. Never shows technical details. */
 export default function RouteError({
   reset,
