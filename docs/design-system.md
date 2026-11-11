@@ -81,7 +81,7 @@ Status is never conveyed by color alone. Use shape too:
 - small centered dot = minimum (not a half, which would imply half credit)
 - empty neutral = not done
 - dashed outline = today, pending
-- diagonal hatch = paused or archived
+- diagonal hatch = paused (archived rows show no cells after the archive date; see the §7 table)
 
 ## 3. Typography
 - **Display/headings:** a characterful serif or grotesk with open licensing, e.g. *Fraunces*

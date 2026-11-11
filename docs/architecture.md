@@ -204,7 +204,7 @@ grant execute on function public.<each rpc> to authenticated;  -- explicit, func
 - **Guards at the top of every write RPC:** `if auth.uid() is null then raise` and `if not exists(profile) then raise`. The second guard makes a deleted account's still-valid JWT useless.
 - **Asserts are null-safe:** `if (cond) is not true then raise …`.
 - **Every query inside a DEFINER function filters `user_id = p_user`.**
-- **Read RPCs (`get_today`, `get_progress`) are `SECURITY INVOKER`**, so RLS applies to them.
+- **Read RPCs (`get_today`, `get_progress`) are `SECURITY INVOKER`**, so RLS applies to them. They call `private.server_today`, so `authenticated` gets `USAGE` on schema `private` and `EXECUTE` on **only** the read-only helpers `private.server_today` and `private.status_on`. These helpers read only the caller's rows under RLS, and since `private` isn't exposed through the API they can't be called over HTTP. H17 asserts exactly this grant set.
 - **Error messages** never echo user input.
 
 **RPCs:**

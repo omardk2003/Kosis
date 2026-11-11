@@ -177,7 +177,7 @@ Purpose: shrink the gap between a lapse and the next action. It's optional and n
   1. **"I did it, just didn't log it"** → late log (§4.4), honestly marked.
   2. **"Do the minimum now"** → Action Mode with the minimum version.
   3. **"Adjust the goal"** → new goal from next week (AC-H3). History is untouched.
-  4. **"Pause this habit"** → effective today (AC-H5).
+  4. **"Pause this habit"** → takes effect tomorrow (AC-H5).
   5. **"Plan the next one"** → implementation intention prompt, saved on the habit.
 - **AC-R4** Recovery never hides a miss. Missed days stay in history and stats.
 - **AC-R5** `lapse_key` is the habit plus the first missed date of the run (daily), or the start of the first qualifying week of the run (weekly). The key stays the same while the lapse continues. A lapse **ends** when a non-voided entry exists with `occurred_on` ≥ that date, including a late log, and its card disappears quietly. Dismissals are stored server-side per `lapse_key`, so a dismissed lapse never reappears. The user can turn Recovery off in Settings.
