@@ -22,3 +22,30 @@ Reviewer: `lead-architect` · 2026-11-11 · **Verdict: APPROVE WITH CHANGES** (V
 **V3. INVOKER reads can't reach `private`** (§4.3 and §4.4). `get_today`/`get_progress` run as `authenticated`, which has no USAGE on `private`. As a result, `server_today` and the `p_now` injection fail. *Fix:* grant `usage on schema private` and `execute` on the INVOKER read helpers only to `authenticated`, keep `private` out of the exposed schemas, and extend H17 to check that no `private` DEFINER function is executable by `authenticated`.
 
 Note: ADRs 0002/0003/0006 don't exist yet. They're needed before Phase 1.
+
+## Re-verification (V1–V3)
+
+| # | Status | Evidence |
+|---|---|---|
+| V1 | RESOLVED | §4.2 `server_today → (lo, hi)`: upper bound is `lo`, lower bound is `hi − 7`, `on_time` only if `d = hi`, falls back to `profiles.timezone`, and a NULL fails closed. Matching changes are in the §4.3 `log_completion` pseudo-code, spec §3 "Today (server)", AC-O3 and testing H20. |
+| V2 | RESOLVED | The §4.3 grants block has one statement per object type, uses `for role postgres`, and adds the global `revoke execute on functions from public`. H17 checks `pg_default_acl`. |
+| V3 | RESOLVED | §4.3: `authenticated` gets USAGE on `private` and EXECUTE only on `server_today` and `status_on`, both INVOKER under RLS. `private` isn't exposed, and H17 asserts the exact grant set. The §4.1 `effective_on` comment is fixed. |
+
+### New blocking finding
+**V4. The §4.3 RPC table still says "server today"** for the `void_completion`, `replace_with_full`, `set_habit_status`, `change_goal` and `upsert_reflection` rows. Read as `lo`, this reopens two holes:
+- `replace_with_full` labels day `lo` as `on_time` while `lo < hi`, which is the V1 evasion.
+- After switching to UTC+14, pause takes effect at `lo + 1 = hi`, so pausing at 23:59 erases today again (the B1 exploit).
+
+*Fix:* name the bound in each row:
+- void/replace window: `≥ hi − 7`
+- replace `source`: `on_time` only if `d = hi`
+- pause/archive: `hi + 1`
+- resume: `lo`
+- `change_goal` "next week": computed from `hi`
+- reflection: `week_start ≤ lo`
+
+Add the replace and pause cases to H20. This is a text-only fix.
+
+### Non-blocking
+- In the grants block, the `grant execute on function private.*` lines must run after the helpers are created, or the migration fails.
+- `get_today` (§4.4) returns only `lo`. Add `hi` so that `lateLogEligibility` matches the DB window (`hi − 7`) and the on-time preview. Otherwise, in the 24 h after a timezone switch, the picker can offer a day the DB rejects.

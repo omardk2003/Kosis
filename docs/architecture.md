@@ -127,7 +127,7 @@ create table habit_status_events (             -- insert-only; status is derived
   seq            bigint generated always as identity,
   habit_id       uuid not null, user_id uuid not null,
   status         text not null check (status in ('active','paused','archived')),
-  effective_on   date not null,                -- inclusive; pause/archive = server today + 1, resume/unarchive = server today
+  effective_on   date not null,                -- inclusive; pause/archive = hi + 1, resume/unarchive = lo (§4.2)
   created_at     timestamptz not null default now(),
   foreign key (habit_id, user_id) references habits(id, user_id) on delete cascade);
 
@@ -213,6 +213,7 @@ revoke all on schema private from public, anon, authenticated;
 grant usage on schema private to authenticated;                                -- only for the read helpers below
 grant execute on function private.server_today(uuid, timestamptz) to authenticated;
 grant execute on function private.status_on(uuid, date) to authenticated;
+-- helper grants run after the helpers are created (end of the migration)
 -- explicit allow-list
 grant select on <each table> to authenticated;
 grant execute on function public.<each rpc>(<args>) to authenticated;
@@ -229,7 +230,9 @@ grant execute on function public.<each rpc>(<args>) to authenticated;
 - H17 asserts exactly this grant set (verification V3).
 - **Error messages** never echo user input.
 
-**RPCs:**
+**RPCs.** `lo` and `hi` are always from `private.server_today(p_user, p_now)` (§4.2):
+- upper bounds and "has started" checks use `lo`
+- lower bounds, on-time labels and status changes that remove plan days use `hi`
 
 | RPC | Rules enforced |
 |---|---|
@@ -242,13 +245,13 @@ A **valid tz** is a row in `pg_timezone_names` whose name is `UTC` or contains `
 | `update_habit_details(id, name, minimum_version, note, color, implementation_intention)` | Column whitelist only. `created_on` can never change. |
 | `reorder_habits(ids uuid[])` | The ids must be exactly the caller's set of habits: no missing, extra or duplicate ids. |
 | `create_habit` (addition) | Rejects the call if the caller already has 50 habits. |
-| `change_goal(habit_id, goal_type, target)` | `effective_from` = next week start, **or** `created_on` if server today falls in the habit's creation week. Allowed in any status. |
-| `set_habit_status(habit_id, status)` | `paused`/`archived`: `effective_on` = server today + 1. `active`: `effective_on` = server today. No other date is accepted (D1). |
+| `change_goal(habit_id, goal_type, target)` | `effective_from` = the week start after `hi`, **or** `created_on` if `hi` falls in the habit's creation week. Allowed in any status. |
+| `set_habit_status(habit_id, status)` | `paused`/`archived`: `effective_on` = **`hi + 1`**. `active`: `effective_on` = **`lo`**. No other date is accepted (D1). |
 | `log_completion(habit_id, occurred_on date default null, variant, note)` | See below. |
-| `void_completion(entry_id, reason)` | `reason in ('undo','correction')` only. The entry must be owned, not voided, and have `occurred_on ≥ server today − 7`. Inserts into `completion_voids` with the composite FK. |
-| `replace_with_full(entry_id)` | Takes the same lock as `log_completion`. The entry must be owned, not voided, have `variant = 'minimum'` and `occurred_on ≥ server today − 7`, and the habit must be active on that day. In one transaction it voids the entry (`replaced`) and inserts a `full` entry for the same day, with `source = late` if `occurred_on < server today`. |
+| `void_completion(entry_id, reason)` | `reason in ('undo','correction')` only. The entry must be owned, not voided, and have `occurred_on ≥ hi − 7`. Inserts into `completion_voids` with the composite FK. |
+| `replace_with_full(entry_id)` | Takes the same lock as `log_completion`. The entry must be owned, not voided, have `variant = 'minimum'` and `occurred_on ≥ hi − 7`, and the habit must be active on that day. In one transaction it voids the entry (`replaced`) and inserts a `full` entry for the same day, with `source = 'on_time'` **only if `occurred_on = hi`**, otherwise `late`. |
 | `dismiss(kind, key)` | Key ≤ 80 characters and must match its kind's format. Upsert, idempotent. |
-| `upsert_reflection(week_start, ...)` | `isodow(week_start) = profile.week_start`. The week has started (`week_start ≤ server today`). Writes are allowed until `week_start + 13`. Text ≤ 1000 characters. `updated_at` is set by the server. |
+| `upsert_reflection(week_start, ...)` | `isodow(week_start) = profile.week_start`. The week has started (`week_start ≤ lo`). Writes are allowed until `week_start + 13` (compared with `lo`). Text ≤ 1000 characters. `updated_at` is set by the server. |
 | `delete_habit(habit_id)` | The only DELETE path. Owner only. Children cascade via FKs. |
 
 `log_completion` pseudo-code:
@@ -276,7 +279,7 @@ insert ... source := case when d = hi then 'on_time' else 'late' end,
 
 ### 4.4 Reads
 - **Today:** `get_today()` (SECURITY INVOKER) returns:
-  - **`today`, computed by the DB** with `server_today`. The domain uses only this value, so there's one clock authority.
+  - **`today` (= `lo`) and `today_hi` (= `hi`), computed by the DB** with `server_today`. The domain uses only these values, so there's one clock authority. `lateLogEligibility` uses `hi − 7 … lo` and previews on-time vs late exactly as the DB will label it.
   - the profile
   - habits with all their goal versions and status events
   - entries **and voids** from `min(weekStart(today) − 14, today − 7)` to today, which covers Recovery's two completed weeks and the late-log picker

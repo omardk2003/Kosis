@@ -77,6 +77,8 @@ Owner: `qa-testing-engineer` · Status: **v0.3, reviewed, pending owner approval
 - Switching to UTC−12 and logging "yesterday" still yields `late`, because only `d = hi` is on time.
 - Switching to UTC+14 can't log a day ahead (upper bound `lo`).
 - The window doesn't widen (lower bound `hi − 7`).
+- After switching west, `replace_with_full` on day `lo` yields `late`.
+- After switching to UTC+14, pausing at 23:59 takes effect at `hi + 1`, so today stays planned.
 - These rules last 24 h. With no event rows, the fallback is `profiles.timezone`. With no timezone at all, the call fails closed. | DB |
 | H21 | Deleted account: a still-valid JWT can't call any RPC, because the profile guard rejects it. | DB |
 
