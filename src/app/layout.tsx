@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { ErrorCopyProvider } from "@/components/error-copy";
 import "@/styles/globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,13 +28,18 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const t = await getTranslations("common");
+  const te = await getTranslations("error");
   return (
     <html lang={locale}>
       <body>
         <a href="#main" className="skip-link">
           {t("skipToContent")}
         </a>
-        {children}
+        <ErrorCopyProvider
+          copy={{ title: te("title"), body: te("body"), retry: te("retry"), home: te("home") }}
+        >
+          {children}
+        </ErrorCopyProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

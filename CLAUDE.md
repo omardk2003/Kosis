@@ -7,7 +7,7 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 ## Current status
 
-- **Phase:** **Phase 0** (foundation) approved and in progress. Specs v0.3 are approved for D1–D6. The §10.2 defaults are still open and must be confirmed before Phase 1.
+- **Phase:** **Phase 0** (foundation) implemented on PR #1. The remaining exit items are a Vercel preview and green GitHub CI. Specs v0.3 are approved for D1–D6. The §10.2 defaults are still open and must be confirmed before Phase 1.
 - **Owner decisions (2026-11-11):**
   - Mobile-first PWA, with native apps possible later.
   - Supabase Auth is required from launch.

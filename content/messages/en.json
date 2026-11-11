@@ -48,6 +48,7 @@
     "placeholder": "Your habits will appear here soon. Nothing to do yet.",
     "signedIn": "You're signed in.",
     "signOut": "Sign out",
+    "signingOut": "Signing out…",
     "offlineSignOut": "Signing out needs a connection. Try again when you're online."
   },
   "offline": {
@@ -57,5 +58,11 @@
   "notFound": {
     "title": "This page doesn't exist",
     "back": "Go to the start page"
+  },
+  "error": {
+    "title": "This page didn't load",
+    "body": "Something went wrong while loading it. Try again in a moment.",
+    "retry": "Try again",
+    "home": "Go to the start page"
   }
 }

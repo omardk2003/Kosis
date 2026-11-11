@@ -48,6 +48,7 @@
     "placeholder": "Dine vaner vises her snart. Der er ikke noget at gøre endnu.",
     "signedIn": "Du er logget ind.",
     "signOut": "Log ud",
+    "signingOut": "Logger ud…",
     "offlineSignOut": "Du skal have forbindelse for at logge ud. Prøv igen, når du er online."
   },
   "offline": {
@@ -57,5 +58,11 @@
   "notFound": {
     "title": "Siden findes ikke",
     "back": "Gå til forsiden"
+  },
+  "error": {
+    "title": "Siden blev ikke indlæst",
+    "body": "Noget gik galt, da den skulle indlæses. Prøv igen om et øjeblik.",
+    "retry": "Prøv igen",
+    "home": "Gå til forsiden"
   }
 }

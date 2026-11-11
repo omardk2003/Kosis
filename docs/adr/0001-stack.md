@@ -2,7 +2,7 @@
 Status: Accepted · 2026-11-11
 
 ## Context
-DISCIPLINE is a mobile-first PWA (owner decision Q1) that requires accounts (Q2), and native apps may come later. The JS budget is 150 KB gzip, with an internal target of 110 KB. It will be hosted on Vercel with Supabase in eu-west-1.
+DISCIPLINE is a mobile-first PWA (owner decision Q1) that requires accounts (Q2), and native apps may come later. The JS budget is 150 KB gzip per route. It will be hosted on Vercel with Supabase in eu-west-1.
 
 ## Decision
 **Pinned exact versions** (`--save-exact`, committed lockfile, Node 22 via `.nvmrc` and `engines`):
@@ -35,4 +35,5 @@ DISCIPLINE is a mobile-first PWA (owner decision Q1) that requires accounts (Q2)
 ## Consequences
 - Every page renders dynamically, because the CSP nonce and session require it. That's acceptable for an authenticated app.
 - **Known risk:** OTP is sent from server actions, so Supabase's per-IP limits see Vercel's egress IPs. The per-email frequency limit (60 s) and Turnstile are the main protections. To be revisited with production traffic.
+- **Bundle (measured 2026-11-11):** an empty Next 16 App Router app is about 132 KB gzip of module JS. The `noModule` polyfill (about 39 KB) is excluded, because modern browsers skip it. The scaffold is 135–140 KB. The 150 KB hard limit stays, and the old 110 KB internal target is replaced by "app JS ≤ ~20 KB above the framework baseline". `tests/perf/check-bundle.mjs` enforces 150 KB in CI.
 - Dev-only `npm audit` findings (8 moderate, minimatch via ESLint tooling) don't ship. Runtime dependencies have 0 known vulnerabilities as of 2026-11-11.

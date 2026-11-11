@@ -32,7 +32,7 @@ export default async function TodayPage() {
       <form action={signOut}>
         <SignOutButton
           label={t("signOut")}
-          pendingLabel={tc("loading")}
+          pendingLabel={t("signingOut")}
           offlineReason={t("offlineSignOut")}
         />
       </form>

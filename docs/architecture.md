@@ -50,7 +50,7 @@ Owner: `lead-architect` · Status: **v0.3, reviewed, pending owner approval** ·
 | i18n | **next-intl** without locale URL prefixes. The locale comes from a cookie, then `Accept-Language`, with EN as the default. Messages live in `content/messages/{en,da}.json` and are rendered in server components (ADR-0009) | Owner decision D6. Server-first, so it adds little client JS |
 | CAPTCHA | **Cloudflare Turnstile**, using Supabase Auth's built-in CAPTCHA (`captchaToken` on `signInWithOtp`), so the token is verified server-side by Supabase. The widget is `@marsidev/react-turnstile` and appears on the sign-in step only | Owner decision D5. A single verification, because Turnstile tokens are single-use |
 | Charts | **Hand-rolled SVG** | Two simple charts, with full control over honest rendering. |
-| PWA | Web app manifest + **hand-written `src/sw.ts`** (no Serwist) | Caches only static, non-personal assets (the app shell). No personal data on the device. No offline writes in MVP. |
+| PWA | Web app manifest + **hand-written `public/sw.js`** (no Serwist, no build step; ADR-0008) | Caches only static, non-personal assets (the app shell). No personal data on the device. No offline writes in MVP. |
 | Tests | Vitest, Testing Library, fast-check, Playwright, axe-core, pgTAP or SQL tests against a local Supabase | See testing-strategy.md. |
 | Hosting | **Vercel, region `dub1`** (Dublin), set in `vercel.json`, co-located with Supabase eu-west-1. Session refresh runs in the Node runtime, not Edge. | Low latency and EU residency. |
 | Email | **Custom EU SMTP provider** for Auth emails (*owner decision D4*) | Supabase's built-in SMTP is rate-limited and not meant for production. |
@@ -69,7 +69,8 @@ src/
   sw.ts                # service worker                                           (frontend-engineer)
   styles/tokens.css    # design tokens: SOLE writer                               (ui-ux-designer)
   styles/*.css         # other styles                                             (frontend-engineer)
-middleware.ts          # Supabase session refresh, auth redirects (name per pinned Next version, ADR-0001) (backend-engineer)
+src/proxy.ts           # Next 16 request hook (ex-middleware): CSP nonce, session refresh, redirects (backend-engineer)
+src/i18n/              # next-intl config, locale negotiation, message types        (frontend-engineer)
 supabase/              # config.toml, migrations/, templates/ (email copy approved by product), seed.sql (local only) (backend-engineer)
 src/server/db.types.ts # generated Supabase types                                 (backend-engineer)
 content/               # quotes + SOURCES.md, copy                                (behavioral-product-specialist)
@@ -352,7 +353,7 @@ Pinned in `supabase/config.toml` and the production dashboard, with values to ve
 - Caches **only** static, versioned build assets and the offline shell page.
 - **Never** caches authenticated HTML, RSC payloads, server-action responses or API responses.
 - No personal data is written to Cache Storage, IndexedDB or localStorage in MVP.
-- Sign-out and account deletion call `caches.keys()` → delete all, then unregister and re-register the worker.
+- Sign-out and account deletion delete every Cache Storage entry (`caches.keys()` → delete) and call `registration.update()`. The worker stays registered: it holds no personal data, and the offline shell keeps working.
 
 ### 7.4 Privacy
 - **Privacy:**
@@ -364,13 +365,14 @@ Pinned in `supabase/config.toml` and the production dashboard, with values to ve
   - A privacy policy exists before launch.
 
 ## 8. Performance budgets
-- **Initial JS budget (revised in Phase 0, pending owner decision D7):**
-  - **Measured on 2026-11-11:** an empty Next.js 16.4.6 + React 19.3.1 App Router app ships **170.3 KB gzip** of JS. The original 150 KB budget can't be met with the approved stack.
-  - **Interim CI ceiling: 185 KB gzip per route**, which is the framework baseline plus about 15 KB of app code. The Phase 0 scaffold measures 174 KB (`/`) and 178 KB (`/sign-in`).
-  - The user-facing targets are unchanged: **LCP ≤ 2.0 s and INP ≤ 200 ms** on a mid-range phone over 4G, measured with Lighthouse CI from Phase 2.
-  - **Rule:** app-owned client JS stays minimal. Translations are passed from the server as props, with no next-intl client runtime. There's no browser Supabase client, and the Turnstile widget appears only on sign-in.
-- LCP ≤ 2.0 s and INP ≤ 200 ms on a Moto G-class device over 4G.
-- `supabase-js` and zod stay out of the client bundle. The client only calls server actions.
+- **Initial JS budget: ≤ 150 KB gzip per route (hard CI limit)**, counting what a modern browser downloads. `noModule` polyfills are excluded.
+  - **Measured in Phase 0:** an empty Next.js 16.4.6 + React 19.3.1 App Router app is about 132 KB. The scaffold is 135.4 KB (`/`) and 139.7 KB (`/sign-in`).
+  - **App-owned client JS** must stay within about 20 KB of the framework baseline. This replaces the old 110 KB internal target, which can't be met with the approved stack (ADR-0001).
+  - **Rules that keep it small:**
+    - Translations are passed from the server as props, with no next-intl client runtime.
+    - There's no browser Supabase client.
+    - The Turnstile widget appears only on sign-in.
+- LCP ≤ 2.0 s and INP ≤ 200 ms on a Moto G-class device over 4G, measured with Lighthouse CI from Phase 2.
 - Today needs one RPC round trip, plus the session check. Local JWT verification (`getClaims`) avoids a second network call to Auth, to be verified in ADR-0001. Progress needs one bounded query, and its route is code-split.
 
 - Optimistic completion feedback in < 100 ms.

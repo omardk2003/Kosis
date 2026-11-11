@@ -1,14 +1,14 @@
-// Bundle check: gzip size of the JS loaded by "/" and "/sign-in".
-// Measured 2026-11-11: an EMPTY Next.js 16.4.6 + React 19.3.1 App Router app ships 170.3 KB gzip, so the
-// original 150 KB budget (110 KB internal target) is unreachable with the approved stack. Interim ceiling
-// 185 KB = framework baseline + ~15 KB app budget, pending owner decision D7 (architecture §8).
+// Bundle check: gzip size of the JS a modern browser loads for "/" and "/sign-in" (architecture §8).
+// Budget: 150 KB gzip hard limit. `noModule` polyfills are excluded (modern browsers skip them).
+// Reference: an empty Next.js 16.4.6 + React 19.3.1 App Router app is ~132 KB by this measure, so app-owned
+// client JS should stay within ~20 KB of that baseline (ADR-0001).
 // Run after `next build`. Starts `next start` on a spare port, reads <script src> from the HTML.
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import { join } from "node:path";
 
-const LIMIT_KB = Number(process.env.BUNDLE_LIMIT_KB ?? 185);
+const LIMIT_KB = Number(process.env.BUNDLE_LIMIT_KB ?? 150);
 const PORT = Number(process.env.BUNDLE_PORT ?? 3111);
 const root = process.cwd();
 const base = `http://127.0.0.1:${PORT}`;
@@ -35,9 +35,10 @@ async function routeSize(path) {
   const html = await (await fetch(base + path)).text();
   const srcs = [
     ...new Set(
-      [...html.matchAll(/<script[^>]*\ssrc="([^"]*\/_next\/static\/[^"]+\.js[^"]*)"/g)].map(
-        (m) => m[1],
-      ),
+      [...html.matchAll(/<script([^>]*)\ssrc="([^"]*\/_next\/static\/[^"]+\.js[^"]*)"([^>]*)>/g)]
+        // Skip `noModule` legacy polyfills: modern browsers never download them.
+        .filter((m) => !/\bnomodule\b/i.test(`${m[1]} ${m[3]}`))
+        .map((m) => m[2]),
     ),
   ];
   let total = 0;
