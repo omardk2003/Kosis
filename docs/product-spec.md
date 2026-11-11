@@ -1,11 +1,22 @@
 # DISCIPLINE — Product Specification (MVP)
 
-Owner: `behavioral-product-specialist` · Status: **v0.2, in review** · 2026-11-11
+Owner: `behavioral-product-specialist` · Status: **v0.3, reviewed, pending owner approval** · 2026-11-11
 Product name: **DISCIPLINE** (repository: `Kosis`)
 
 > "Less planning. More doing. Less pressure. More progress."
 
 ### Changelog
+- **v0.3:** Resolves all blocking findings of the v0.2 reviews (see `docs/reviews/v0.2-consolidated-2026-11-11.md`):
+  - Pause and archive take effect tomorrow.
+  - A timezone change uses a conservative "today".
+  - Voids and replacements are limited to the 7-day window.
+  - Recovery skips no-plan weeks and has a stable lapse key.
+  - "Needs today" is defined.
+  - The late-log picker is a day list.
+  - 0% and "no plan" are distinct.
+  - Offline stores no personal data on the device.
+  - Integer arithmetic.
+  - Copy fixes.
 - **v0.2:** Adds the owner decisions (§10.1). Incorporates `docs/reviews/product-review-2026-11-11.md` (findings 1–15) and `docs/reviews/architecture-review-2026-11-11.md` (findings 6, 7, 11). The main changes:
   - Action Mode only promotes habits that need today.
   - Today is "pending", not missed.
@@ -39,7 +50,7 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
 | Principle | Rule in product |
 |---|---|
 | Progress > perfect streaks | The headline metric is **weekly consistency %** over completed weeks. No streaks in MVP. |
-| Never silently rewrite history | The completion log is append-only. Goal changes take effect from a future week start. Pause and archive take effect from today. "Undo" creates a retained void record. No operation changes the evaluation of a completed week, except a late log, which is labeled. |
+| Never silently rewrite history | The completion log is append-only. Goal changes take effect from a future week start. Pause and archive take effect from **tomorrow**. "Undo" creates a retained void record. A completed week's evaluation changes only through (a) a late log, (b) a void (undo or correction), or (c) a minimum→full replacement, each within today − 7 … today and each visible, or (d) deleting a habit, which the user confirms explicitly. |
 | Never fake stats | Every number has a formula (§7). Round percentages **down** and targets **up**. Always show the denominator ("8 of 10"). Show late and minimum counts. No demo data in real accounts. |
 | Less planning | A habit needs only a name and a goal. No time, reminder, or category is required. |
 | Less pressure | No red failure states, no guilt copy, no notifications. Quotes and recovery tips are optional. The current week is never judged while it's in progress. |
@@ -52,7 +63,7 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
 - **Week:** 7 local days starting on the user's **week start** (ISO weekday 1 = Mon … 7 = Sun). It's chosen at onboarding, defaulting to the locale (Monday fallback), and fixed in MVP (§10 Q10).
 - **Completed week:** a week whose last day is before today. Only completed weeks get a consistency %.
 - **Habit:** name, optional minimum version (e.g. "1 push-up"), optional note, color, user order, optional implementation intention ("After ___, I will ___").
-- **Habit status:** `active` · `paused` · `archived`. Changes take effect **today**, never on a past date. Deletion is separate (AC-H6).
+- **Habit status:** `active` · `paused` · `archived`. Pause and archive take effect **tomorrow**. Resume and unarchive take effect today. No change ever takes effect on a past date. Deletion is separate (AC-H6).
 - **Goal (goal version):** MVP goal types:
   - `daily`: every active day.
   - `weekly_count` N (1–7): N distinct days per week, on any days.
@@ -65,8 +76,9 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
   - `variant` is `full` or `minimum`.
   - `note` is optional.
   - At most **one non-voided entry per habit per day**.
-- **Void:** a separate, insert-only record that cancels an entry, with a timestamp and reason (`undo`, `correction`, or `replaced`). Voided entries are excluded from stats but retained in history and export.
-- **Late log:** an entry whose `occurred_on` is before the local date of its `logged_at`. It's allowed for **today − 7 … today − 1** and always labeled "logged later".
+- **Void:** a separate, insert-only record that cancels an entry, with a timestamp and reason. The user can void with reason `undo` or `correction`. The system voids with `replaced`. Voids are allowed only for entries with `occurred_on` in today − 7 … today. Voided entries are excluded from stats but retained in history (under "Show removed entries") and in the export.
+- **Late log:** an entry whose `occurred_on` is before "today" at the time it's logged. It's allowed for **today − 7 … today − 1** and always labeled "logged later".
+- **Today (server):** the local date in the profile timezone. If the timezone changed in the last 24 h, "today" is the **earliest** local date under any timezone in effect during that period, so switching timezones can't avoid the late label or log a day early.
 - **Active day:** a day on or after the habit's creation date on which its status is `active`.
 - **Planned / completed:** the denominator and numerator per habit per week (§7).
 
@@ -77,9 +89,9 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
 - **AC-O2** First sign-in runs onboarding in **≤ 2 steps**:
   1. Confirm the timezone (detected via `Intl`) and the week start (from the locale).
   2. Create the first habit (name + goal, default "3 times per week").
-- **AC-O3** If the device timezone later differs from the profile timezone, show a quiet prompt: "Your device is on <tz>. Switch?" Never switch silently. A switch applies from that moment. Existing entries keep their dates.
+- **AC-O3** If the device timezone later differs from the profile timezone, show a quiet prompt: "Your device is on <tz>. Switch?" Never switch silently. A switch applies from that moment. Existing entries keep their dates. For 24 h after a switch, entries for the date that just ended may be labeled "logged later" (see "Today (server)"). *(Owner approval D2.)*
 - **AC-O4** Sign-out, plus session persistence across app restarts.
-- **AC-O5** The user can delete their account in Settings, after re-confirming with a one-time code. This permanently deletes all their data. The confirmation suggests exporting first.
+- **AC-O5** The user can delete their account in Settings, after re-confirming with a one-time code sent to their own email (valid 5 minutes). This permanently deletes all their data. The confirmation suggests exporting first. Afterwards the user is signed out, and the app's caches on the device are cleared.
 
 ### 4.1 Habit management
 - **AC-H1** The user can create a habit with only a name and a goal, in ≤ 2 screens, with no time field.
@@ -87,59 +99,79 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
 - **AC-H3** Goal changes take effect **from the start of next week**. The current week and all past weeks keep their goal.
   - *Given* 2 completions this week under "3 per week", *when* the goal changes to "4 per week", *then* this week is evaluated against 3 and next week against 4. The habit detail shows "Goal changes to 4 per week from Mon 16 Nov."
   - **Exception:** during the habit's **creation week**, before any week has been evaluated, the goal can be corrected from the creation date.
-- **AC-H4** **Archive** takes effect today. It hides the habit from Today and stops new planned days. Past weeks stay in history and in overall consistency. Archived habits appear in Progress under "Archived", and the user can unarchive them (effective today). Archived days render as "archived", not missed.
-- **AC-H5** **Pause** *(proposed in scope)* takes effect today and works like archive, but the habit stays visible on Today as "Paused · Resume". Paused days generate no planned days and render as "paused".
-- **AC-H6** **Delete** permanently removes the habit and all its entries. The user must confirm, and the confirmation says what will be lost and suggests archiving instead. It's the only user-initiated destructive path for habit data.
+- **AC-H4** **Archive** takes effect **tomorrow**. It hides the habit from Today right away. Today remains a planned day and keeps any entry, and new planned days stop from tomorrow. Past weeks stay in history and in overall consistency. Archived habits appear in Progress under "Archived", and the user can unarchive them (effective today). Archived days render as "archived", not missed.
+- **AC-H5** **Pause** *(proposed in scope)* takes effect **tomorrow** and works like archive, but the habit stays visible on Today. On the day of pausing it shows "Pauses from tomorrow · Undo". After that it shows "Paused · Resume". Resume takes effect today. Paused days generate no planned days and render as "paused".
+- **AC-H6** **Delete** permanently removes the habit and all its entries. Confirmation copy: "This permanently deletes <habit> and its N entries. Past weekly percentages will be recalculated without it. Archiving keeps them." It's the only user-initiated destructive path for habit data.
 - **AC-H7** The user can reorder habits. The order is the priority for Action Mode.
-- **AC-H8** Pause, archive, and their reversals can never take effect on a past date. Days before the change keep their planned days.
+- **AC-H8** No status change can take effect on a past date. Pause and archive take effect from **tomorrow** (*owner approval D1*), so pausing late in the evening can't erase an undone day and never hides an entry already logged. Resume and unarchive take effect today.
+- **AC-H9** A goal change on a paused or archived habit is allowed and follows AC-H3.
 
 ### 4.2 Daily dashboard ("Today")
-- **AC-D1** The top shows **one primary action**, "Start: <habit>", from the Action Mode selection (§4.3). If there's no candidate, it shows "All done for today." calmly, with no confetti, and lists optional habits below.
+- **AC-D1** Today has **one primary action**, "Start: <habit>", from the Action Mode selection (§4.3). On mobile it docks above the bottom navigation. In DOM and focus order it comes right after the page heading. If there's no candidate, that position shows "All done for today." calmly, with no confetti, and optional habits are listed below.
+  Order on the page:
+  1. Offline banner
+  2. Timezone prompt
+  3. At most **one** inline card (recovery, otherwise reflection)
+  4. Sections
+  5. Quote under the primary action
 - **AC-D2** Sections:
   - **Due today:** `daily` habits not done today, and `weekly_count` habits that *need today* (§4.3).
   - **Optional today:** other incomplete weekly habits, each with "1 of 3 this week".
   - **Done today**
   - **Paused**
-- **AC-D3** A one-tap complete is **committed immediately**, with an optimistic UI. An undo toast (5 s) creates a `void` with reason `undo`. Tapping a habit already done today offers "Remove today's entry", which also creates a void. It never adds a second entry.
+- **AC-D3** A one-tap complete is **committed immediately**, with an optimistic UI. An undo toast (5 s, paused on hover or focus) creates a `void` with reason `undo`. Tapping a habit already done today offers "Remove today's entry" (void, reason `undo`). It never adds a second entry. If the save fails, the row reverts and shows "Couldn't save. Try again."
 - **AC-D4** States:
   - loading: skeleton
   - empty: no habits → "Create your first habit"
   - error: message + retry, with cached data shown if available
   - offline: quiet banner, completion disabled with the reason
   - success
-- **AC-D5** The optional daily quote is one quiet line below the primary action. It's dismissible for the day, never a modal or notification, and off by default (§4.8).
+- **AC-D5** The optional daily quote is one quiet line below the primary action. It's dismissible for the day, never a modal or notification, and off by default. The user enables it in Settings (§4.8).
 
 ### 4.3 Action Mode
 Goal: from opening the app to doing the thing in under 5 seconds.
-- **AC-A1** **Candidates** are active habits not completed today that are either:
+- **AC-A1** **Candidates** are habits that are active today and not completed today, and that are either:
   - (a) `daily`, or
-  - (b) `weekly_count` and *need today*: `remaining_needed ≥ remaining_days_including_today`.
+  - (b) `weekly_count` and *need today*: `remaining_needed ≥ 1` and `remaining_needed ≥ remaining_days`.
+
+  Definitions:
+  - `planned_this_week` = §7.1, computed with the active days of the whole week, assuming the current status and any already-scheduled pause or archive.
+  - `remaining_needed = max(0, planned_this_week − distinct days done this week)`.
+  - `remaining_days` = active days from today through the last day of the week, inclusive.
 
   Candidates are ranked by user order. Other incomplete weekly habits are "Optional today" and never become the primary action.
-- **AC-A2** The reason shows in small text: "Due today" or "2 more this week, 2 days left".
-- **AC-A3** Start opens a focused full-screen view with the habit name, the implementation intention if set, the minimum version if set, and three actions: **Done**, **Do the minimum** (only when a minimum version is defined), and **Not now**. No timer in MVP *(proposed cut)*.
-- **AC-A4** "Not now" shows the next candidate. The skipped habit moves to the end of the list for the rest of the local day. Nothing is stored and nothing counts as a miss.
-- **AC-A5** "Done" records an `on_time`, `full` entry for today and returns to Today with a short confirmation: "Logged. Nice work." "Do the minimum" records `variant = minimum`. The user decides what counts, and reports disclose it (§7.5).
+- **AC-A2** The reason shows in small text:
+  - "Due today"
+  - "2 more this week, 2 days left"
+  - When `remaining_needed > remaining_days`, so the target can't be reached: "Last chance this week · 1 of 3 so far" on the last day, or "1 of 3 so far this week" otherwise. Copy never announces that the week is lost.
+- **AC-A3** Start opens a focused full-screen view with the habit name, the implementation intention if set, the minimum version if set, and three actions:
+  - **Done** (filled)
+  - **Do the minimum** (outline; only when a minimum version is defined; filled when the view is opened from Recovery)
+  - **Not now** (text button)
+
+  No timer in MVP *(proposed cut)*.
+- **AC-A4** "Not now" shows the next candidate. The skipped habit moves to the end of the list for the rest of the local day. The skip lives only in this device's session state. Nothing is stored on the server and nothing counts as a miss. A reload resets the skips.
+- **AC-A5** "Done" records an `on_time`, `full` entry for today and returns to Today with a short confirmation: "Logged. Nice work." "Do the minimum" records `variant = minimum` and confirms "Logged the minimum. That counts." The user decides what counts, and reports disclose it (§7.5).
 
 ### 4.4 Late completion logging
 - **AC-L1** The user can record a completion for a date in **today − 7 … today − 1** from a habit's history or from Today ("Log a past day").
 - **AC-L2** The entry stores the chosen `occurred_on`. The server assigns `logged_at`, and `source = late` is derived. The client can't set either.
 - **AC-L3** Late entries count toward the week they occurred in, including a completed week. That week's numbers update and show "includes 1 logged later". Late entries are always visibly marked.
-- **AC-L4** The date picker disables, and states why, any date that is:
-  - outside the window
+- **AC-L4** The picker is a list of the 7 days today − 1 … today − 7, each row 44 px. A day is disabled, with the reason shown inline (`aria-disabled`, still focusable), when it is:
   - before the habit's creation date
   - on a paused or archived day
-  - in the future
-  - already completed
-- **AC-L5** A second entry for a day that already has one is rejected. The user can replace a minimum entry with a full one, which voids the old entry with reason `replaced`.
+  - already completed with a `full` entry
+
+  A day with a `minimum` entry stays enabled and offers "Replace minimum with full" (AC-L5).
+- **AC-L5** A second entry for a day that already has one is rejected. The user can replace a `minimum` entry with a `full` one only for days in today − 7 … today, and only on a day when the habit was active. The old entry is voided with reason `replaced`, and the new entry is `late` if its day is before today. Both happen together or not at all.
 
 ### 4.5 Recovery Mode
 Purpose: shrink the gap between a lapse and the next action. It's optional and never blocking.
-- **AC-R1 Triggers.** An active habit has a lapse when either:
-  - (a) `daily`: neither of the last 2 active days before today has an entry, or
-  - (b) `weekly_count`: the last completed week had 0 completions, or the last two completed weeks were both below target.
+- **AC-R1 Triggers.** A habit that is active today has a lapse when either:
+  - (a) `daily`: it has ≥ 2 active days before today, and neither of the last 2 has an entry, or
+  - (b) `weekly_count`: the last completed week **with planned > 0** had 0 completions, or the last two completed weeks with planned > 0 were both below planned. Weeks with no plan, such as paused weeks, are skipped. They neither count nor break a run.
 
-  There is no mid-week trigger. A habit with no completed week yet never lapses.
+  There is no mid-week trigger. A `weekly_count` habit with no completed week that has a plan never lapses.
 - **AC-R2** At most **one** recovery card shows on Today: the lapsing habit highest in the user's order. It's an inline card with **Show options** and **Dismiss**. No badges and no red.
 - **AC-R3** Options (pick any, or none):
   1. **"I did it, just didn't log it"** → late log (§4.4), honestly marked.
@@ -148,19 +180,21 @@ Purpose: shrink the gap between a lapse and the next action. It's optional and n
   4. **"Pause this habit"** → effective today (AC-H5).
   5. **"Plan the next one"** → implementation intention prompt, saved on the habit.
 - **AC-R4** Recovery never hides a miss. Missed days stay in history and stats.
-- **AC-R5** A lapse ends at the next completion, including a late log, and its card disappears quietly. Dismissals are stored server-side per lapse (`lapse_key` = habit + first missed date, or the week start for weekly habits). A dismissed lapse never reappears. The user can turn Recovery off in Settings.
+- **AC-R5** `lapse_key` is the habit plus the first missed date of the run (daily), or the start of the first qualifying week of the run (weekly). The key stays the same while the lapse continues. A lapse **ends** when a non-voided entry exists with `occurred_on` ≥ that date, including a late log, and its card disappears quietly. Dismissals are stored server-side per `lapse_key`, so a dismissed lapse never reappears. The user can turn Recovery off in Settings.
 - **AC-R6** Copy is shame-free:
   - daily: "<Habit> slipped the last few days. Want to get back on track?"
-  - weekly: "<Habit> was quiet last week. Want to get back on track?"
+  - weekly with 0 completions: "<Habit> was quiet last week. Want to get back on track?"
+  - weekly below target: "<Habit> has been harder to fit in lately. Want to get back on track?"
 - **AC-R7** States: no card when there's no lapse, so there's no empty state. If saving a dismissal fails, the card hides locally and the save is retried.
 
 ### 4.6 Progress
-- **AC-P1** The primary graph shows **weekly consistency %** for the last **12 completed weeks** as bars, with a zero-based axis. Tapping a bar shows "80% · 8 of 10 planned · 1 logged later · 2 minimum". The current week shows separately as "In progress · 3 of 5 so far", never as a %.
-- **AC-P2** Weeks with no planned days render as "no plan" (a gap), never 0%.
-- **AC-P3** The per-habit 12-week heatmap uses shape-coded cells (see design-system §7):
+- **AC-P1** The primary graph shows **weekly consistency %** for the last **12 completed weeks** as bars, with a zero-based axis. The bars are not interactive. Below them, a **week list** (44 px rows) gives the details and doubles as the accessible table: "Week of 2 Nov · 80% · 8 of 10 planned · 1 logged later · 2 minimum". The current week shows as a non-interactive chip, "In progress · 3 done so far", never as a %. Per-habit rows show "X of Y".
+- **AC-P2** Weeks with no planned days render as "no plan": no bar, an en-dash under the axis, and "No plan" in the list. A 0% week renders a visible baseline stub. The two never look alike.
+- **AC-P3** The per-habit 12-week heatmap is non-interactive and uses the shape-coded cells in design-system §7. The cell states are derived by the domain layer, never the UI:
   - done
   - done, logged later (ring)
-  - minimum (small dot)
+  - minimum (dot)
+  - logged later + minimum (ring with dot)
   - not done (neutral empty, never red; screen-reader label "not done")
   - today, pending
   - paused
@@ -178,7 +212,7 @@ Purpose: shrink the gap between a lapse and the next action. It's optional and n
 
 ### 4.7 Weekly reflection
 - **AC-W1** On the last day of the user's week, or the first open of a new week, a non-blocking card offers "Reflect on your week" (≤ 60 s). It's dismissible, and the dismissal is stored.
-- **AC-W2** It shows a factual summary per habit: "done X of Y", including late and minimum counts. The summary is **computed live**. If late logs changed it after the user saw it, it notes "updated by later logs".
+- **AC-W2** It shows a factual summary per habit: "done X of Y", including late and minimum counts. The summary is **computed live**. It notes "updated by later logs" when any counted entry or void for that week has a `logged_at`/`voided_at` after the reflection's `created_at`. On the last day of the week the summary uses the in-progress rules (§7.4) and says "so far".
 - **AC-W3** Optional prompts: *What went well? What got in the way? One adjustment for next week?* Plus an optional 1–5 "How did this week feel?", which is never charted.
 - **AC-W4** "One adjustment" can link directly to a goal change (from next week).
 - **AC-W5** Reflections are keyed by the **user week start date**. They can be edited until 7 days after the week ends, then become read-only. An edited reflection shows "edited <date>".
@@ -186,13 +220,13 @@ Purpose: shrink the gap between a lapse and the next action. It's optional and n
 
 ### 4.8 Daily quote (optional)
 - **AC-Q1** Quotes come from a curated local list of **original or public-domain** quotes. Each has an attribution, and its source or license is recorded in `content/quotes/SOURCES.md`.
-- **AC-Q2** The quote is deterministic per local day, needs no network, appears at most once per day, and is dismissible. It's **off by default**, and the user enables it in Settings or onboarding *(proposed, confirm)*.
+- **AC-Q2** The quote is deterministic per local day, needs no network, appears at most once per day, and is dismissible. It's **off by default**, and the user enables it in Settings only *(proposed, confirm)*. The feature ships with **zero quotes** until `content/quotes/SOURCES.md` lists vetted entries.
 
 ### 4.9 Cross-cutting
 - **AC-X1** Mobile-first: fully usable at 360 px, one-handed, with the primary action in the thumb zone. The PWA is installable.
 - **AC-X2** Every screen defines loading, empty, error, success, and offline states (design-system §8).
-- **AC-X3** **Data export:** JSON of everything (habits, goal versions, status events, entries, voids, reflections, settings), plus a CSV of entries.
-- **AC-X4** Offline in MVP is **read-only**: the cached app shell and the last loaded data. Writes need a connection, and the UI says so.
+- **AC-X3** **Data export:** JSON of everything (habits, goal versions, status events, timezone history, entries, voids, reflections, settings), plus a CSV of entries. The export is complete, never truncated. CSV cells starting with `= + - @` are escaped.
+- **AC-X4** Offline in MVP is **read-only**. The service worker caches only the static app shell. **No personal data is persisted on the device.** Data already loaded in the open session stays visible with "Last updated <time>". A cold start while offline shows the shell plus "You're offline. Connect to see your habits." Writes need a connection, and the UI says so.
 - **AC-X5** Sync: changes appear on another signed-in device on its next load or focus. Real-time push is not required.
 
 ## 5. Out of scope for MVP
@@ -207,7 +241,7 @@ Native apps (planned later; the domain layer is kept portable), social features 
 
 ## 7. Metric definitions (authoritative)
 
-All computations use local dates in the profile timezone and **non-voided** entries only. For each date they use the goal version and status in effect on that date. Percentages round **down**.
+All computations use local dates in the profile timezone and **non-voided** entries only. For each date they use the goal version and status in effect on that date. Percentages round **down**. **Integer arithmetic only:** `floor((100·c) / p)` and `ceil((N·a) / 7)` as integer division, never floating point.
 
 ### 7.1 Planned days per habit per completed week
 - `active_days` = days in the week that are on or after `created_on` and on which status is `active`.
@@ -234,12 +268,12 @@ All computations use local dates in the profile timezone and **non-voided** entr
 
 ### 7.4 Current week (in progress)
 Never shown as a %, and excluded from bars, the trend, and Recovery.
-- Display: "In progress · X of Y so far".
+- Aggregate display: "In progress · X done so far". Per-habit display: "X of Y so far".
 - `daily`: Y = active days before today, plus today only if today is done.
 - `weekly_count`: Y = the week's planned target (it's a progress toward the target, not a judgment).
 
 ### 7.5 Disclosure counts
-Every aggregate shows `late` (entries with `source = late`) and `minimum` (entries with `variant = minimum`) counts whenever they're greater than 0.
+Every aggregate shows `late` (entries with `source = late`) and `minimum` (entries with `variant = minimum`) counts whenever they're greater than 0. Only entries that count toward `completed` are included in those counts.
 
 ### 7.6 Trend
 `pct(window) = floor(100 × Σ completed / Σ planned)` over the 4 most recent completed weeks (B) compared with the 4 before them (A). The display rules are in AC-P4.
@@ -278,10 +312,20 @@ Calm, direct, kind, brief. Second person, sentence case. No exclamation marks in
 | Q7 | Daily quote? | **In scope, off by default.** Original or public-domain only. |
 | Q8 | Data export? | **Yes:** JSON plus CSV of entries. |
 | Q9 | Reminders? | **None in MVP.** |
-| Q10 | Language and week start? | **Language: owner input needed (English or Danish).** Week start comes from the locale (Monday in DK) and is fixed after onboarding in MVP. |
+| Q10 | Language and week start? | **Language: owner input needed.** English is recommended for MVP, with all strings externalized so Danish can follow. Week start comes from the locale (Monday in DK) and is fixed after onboarding in MVP. |
 | Q11 | Brand assets? | None until provided. The design-system direction applies. |
 | Q12 | Should `weekly_count` count distinct days? | **Yes** (§7.2). |
 | Q13 | Recovery cards? | One at a time. |
-| Q14 | Soft cap on habits? | No cap. A neutral note at more than 5 active habits: "Fewer habits tend to stick better." |
+| Q14 | Soft cap on habits? | Hard technical limit of 50. A neutral note at more than 5 active habits: "Starting with fewer habits can make each one easier to keep." |
 | Q15 | Keep the feeling rating? | Yes, optional and never charted. |
 | Q16 | Sign-in method? | Email one-time code. Apple and Google sign-in come post-MVP. |
+
+### 10.3 Decisions from the v0.2 review (owner: approve)
+See `docs/reviews/v0.2-consolidated-2026-11-11.md` §6.
+| ID | Decision | Default in this spec |
+|---|---|---|
+| D1 | Pause and archive take effect tomorrow | Adopted (AC-H4/H5/H8) |
+| D2 | Conservative "today" for 24 h after a timezone change | Adopted (§3, AC-O3) |
+| D3 | Staging environment | A separate Supabase project, created by the owner (architecture §9) |
+| D4 | Production email provider for OTP | Owner to choose (EU-based) |
+| D5 | CAPTCHA on OTP send | Owner to choose (Turnstile or hCaptcha) |

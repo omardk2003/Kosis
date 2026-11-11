@@ -1,6 +1,6 @@
 ---
 name: backend-engineer
-description: Use to implement the domain layer (habit schedules, completion log, consistency stats, Action Mode selection, Recovery detection), the database schema and migrations, auth/authorization (RLS), server actions/API routes, and data import/export. Invoke for any change under src/domain, src/server, or db/.
+description: Use to implement the domain layer (habit schedules, completion log, consistency stats, Action Mode selection, Recovery detection), the database schema and migrations, auth/authorization (RLS), server actions/API routes, and data import/export. Invoke for any change under src/domain, src/server, supabase/, or middleware.ts.
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: sonnet
 ---

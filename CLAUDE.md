@@ -7,14 +7,14 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 ## Current status
 
-- **Phase:** Specification v0.2 (in review). No application code exists yet.
+- **Phase:** Specification v0.3 (reviewed by all agents, pending owner approval). No application code exists yet.
 - **Owner decisions (2026-11-11):**
   - Mobile-first PWA, with native apps possible later.
   - Supabase Auth is required from launch.
   - Late logging is allowed up to 7 days back.
   - Product name: DISCIPLINE. Repository name: Kosis.
-- **Gate:** No feature implementation until the owner approves v0.2 and the proposed defaults
-  in `docs/product-spec.md` §10.2.
+- **Gate:** No feature implementation until the owner approves v0.3, the proposed defaults in
+  `docs/product-spec.md` §10.2, and decisions D1–D3 in §10.3.
 - Source of truth, in order: `docs/product-spec.md` → `docs/architecture.md` →
   `docs/design-system.md` → `docs/testing-strategy.md` → `docs/mvp-roadmap.md`.
   If the code and the docs disagree, stop and flag it. Don't silently "fix" either one.
@@ -77,7 +77,8 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 1. **File ownership.** Each agent edits only the paths it owns (see the agent files). To
    change a file you don't own, write a change request in `docs/handoffs/<date>-<topic>.md`
-   addressed to the owner. Don't edit the file.
+   addressed to the owner. Don't edit the file. `docs/handoffs/` is create-only for every
+   agent: create new files there, and edit only the handoff files you created.
    Colocated unit tests belong to the owner of the source file next to them.
 2. **Contracts first.** Shared types live in `src/domain/types.ts` (owned by
    `backend-engineer`). The frontend consumes them and never redefines them.
