@@ -12,7 +12,7 @@ export function SignOutButton({ label, pendingLabel, offlineReason }: Props) {
     <div className="flex flex-col gap-2">
       <button
         type="submit"
-        className="btn btn-secondary self-start"
+        className="btn btn-secondary min-h-[var(--control-height)] w-full sm:w-auto sm:self-start"
         aria-disabled={!online || pending}
         onClick={(event) => {
           if (!online || pending) event.preventDefault();

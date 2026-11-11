@@ -5,6 +5,7 @@ import { signOut } from "@/server/auth/actions";
 import { LanguageSwitch } from "@/components/language-switch";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SignOutButton } from "@/features/auth/ui/sign-out-button";
+import { FocusHeading } from "@/components/focus-heading";
 
 /** Phase 0 placeholder for the Today dashboard (docs/screens/today-placeholder.md). */
 export default async function TodayPage() {
@@ -14,14 +15,20 @@ export default async function TodayPage() {
   const t = await getTranslations("today");
   const tc = await getTranslations("common");
   return (
-    <main id="main" className="mx-auto flex min-h-dvh max-w-[640px] flex-col gap-6 px-4 py-8">
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh max-w-[var(--content-max)] flex-col gap-6 px-4 py-8"
+    >
+      <FocusHeading targetId="today-heading" />
       <OfflineBanner text={tc("offlineBanner")} />
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold">{t("title")}</h1>
+        <h1 id="today-heading" tabIndex={-1} className="font-display text-xl font-semibold">
+          {t("title")}
+        </h1>
         <LanguageSwitch />
       </div>
-      <p className="text-text-muted">{t("placeholder")}</p>
-      <p>{t("signedIn")}</p>
+      <p className="text-text-muted">{t("signedIn")}</p>
+      <p>{t("placeholder")}</p>
       <form action={signOut}>
         <SignOutButton
           label={t("signOut")}

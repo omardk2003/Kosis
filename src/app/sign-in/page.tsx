@@ -35,11 +35,14 @@ export default async function SignInPage({
   };
   const status = params.signedOut ? t("signedOut") : params.ended ? t("sessionEnded") : null;
   return (
-    <main id="main" className="mx-auto flex min-h-dvh max-w-[480px] flex-col gap-8 px-4 py-8">
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh max-w-[var(--form-max)] flex-col gap-8 px-4 py-8"
+    >
       <div className="flex justify-end">
         <LanguageSwitch />
       </div>
-      <h1 className="font-display text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="font-display text-xl font-semibold">{t("title")}</h1>
       {status ? (
         <p role="status" className="text-text-muted">
           {status}

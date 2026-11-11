@@ -64,12 +64,13 @@ body {
 .btn:active {
   transform: scale(var(--press-scale));
 }
+/* Full contrast when disabled: the visible reason next to the button explains why (UI-8). */
 .btn[aria-disabled="true"],
 .btn:disabled {
-  opacity: 0.6;
   cursor: not-allowed;
 }
 .btn-primary {
+  font-family: var(--font-display);
   background: var(--accent);
   color: var(--accent-contrast);
   border: 1px solid var(--accent);
@@ -89,6 +90,10 @@ body {
   text-underline-offset: 3px;
 }
 
+.field-input[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--text);
+}
 .field-input {
   width: 100%;
   min-height: var(--control-height);

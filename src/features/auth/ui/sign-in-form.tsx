@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { signInStep, type SignInState } from "@/server/auth/actions";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -8,6 +8,13 @@ import { useOnline } from "@/components/use-online";
 import { purgeAppCaches } from "./purge-caches";
 
 const RESEND_SECONDS = 60;
+
+type ErrorKey =
+  | "errors.invalidEmail"
+  | "errors.badCode"
+  | "errors.rateLimited"
+  | "errors.captchaFailed"
+  | "errors.unavailable";
 
 /** Pre-translated strings from the server (keeps next-intl's runtime out of the client bundle). */
 export type SignInCopy = Record<
@@ -37,6 +44,10 @@ type Props = {
   copy: SignInCopy;
 };
 
+/**
+ * Two-step email OTP sign-in (docs/screens/sign-in.md). Inputs are controlled so nothing typed
+ * is lost after a server error; focus moves to the field that needs attention (WCAG 2.4.3).
+ */
 export function SignInForm({ configured, turnstileSiteKey, purgeCaches, locale, copy }: Props) {
   const t = (key: keyof SignInCopy, values?: Record<string, string | number>) =>
     Object.entries(values ?? {}).reduce(
@@ -44,26 +55,41 @@ export function SignInForm({ configured, turnstileSiteKey, purgeCaches, locale, 
       copy[key],
     );
   const online = useOnline();
-  const emailId = useId();
-  const codeId = useId();
-  const errorId = useId();
+  const ids = { email: useId(), code: useId(), hint: useId(), error: useId(), offline: useId() };
   const turnstileRef = useRef<TurnstileInstance>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
 
   const [state, action, busy] = useActionState(signInStep, { step: "email" } as SignInState);
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
 
   useEffect(() => {
     if (purgeCaches) void purgeAppCaches();
   }, [purgeCaches]);
+
+  // After every server response: reset the single-use CAPTCHA token and move focus.
   useEffect(() => {
     turnstileRef.current?.reset();
+    if (state.step === "code") {
+      codeRef.current?.focus();
+      if (state.error) codeRef.current?.select();
+    } else if (state.error) {
+      emailRef.current?.focus();
+    }
   }, [state]);
 
   const secondsLeft = useCountdown(state.step === "code" ? state.sentAt : null);
-  const errorKey = errorMessageKey(state.error);
+  const errorKey = !configured ? "errors.unavailable" : errorMessageKey(state.error);
   const blocked = !online || !configured || busy;
+  const describedBy = (...parts: (string | false | null | undefined)[]) =>
+    parts.filter(Boolean).join(" ") || undefined;
+  const preventIfBlocked = (event: FormEvent<HTMLFormElement>) => {
+    if (blocked) event.preventDefault();
+  };
 
   const captcha = turnstileSiteKey ? (
-    <div aria-label={t("captchaLabel")}>
+    <div aria-label={t("captchaLabel")} className="min-h-[65px]">
       <Turnstile
         ref={turnstileRef}
         siteKey={turnstileSiteKey}
@@ -72,44 +98,51 @@ export function SignInForm({ configured, turnstileSiteKey, purgeCaches, locale, 
     </div>
   ) : null;
 
-  const errorBlock = (
-    <>
-      {!configured ? (
-        <p id={errorId} role="alert" className="text-sm">
-          {t("errors.unavailable")}
-        </p>
-      ) : errorKey ? (
-        <p id={errorId} role="alert" className="text-sm">
-          {t(errorKey)}
-        </p>
-      ) : null}
-      {!online ? <p className="text-sm text-text-muted">{t("errors.offline")}</p> : null}
-    </>
-  );
+  const errorLine = errorKey ? (
+    <p id={ids.error} role="alert" className="text-sm font-medium">
+      {t(errorKey)}
+    </p>
+  ) : null;
+  const offlineLine = !online ? (
+    <p id={ids.offline} className="text-sm text-text-muted">
+      {t("errors.offline")}
+    </p>
+  ) : null;
 
   if (state.step === "email") {
     return (
-      <form action={action} className="flex flex-col gap-4" noValidate>
-        <input type="hidden" name="intent" value="send" />
+      <form action={action} onSubmit={preventIfBlocked} className="flex flex-col gap-3" noValidate>
         <OfflineBanner text={copy.offlineBanner} />
-        <label htmlFor={emailId} className="font-medium">
+        <input type="hidden" name="intent" value="send" />
+        <label htmlFor={ids.email} className="font-medium">
           {t("emailLabel")}
         </label>
+        <p id={ids.hint} className="text-sm text-text-muted">
+          {t("emailHint")}
+        </p>
         <input
-          id={emailId}
+          ref={emailRef}
+          id={ids.email}
           name="email"
           type="email"
           inputMode="email"
           autoComplete="email"
           required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="field-input"
-          aria-describedby={errorKey ? errorId : undefined}
+          aria-describedby={describedBy(ids.hint, errorKey && ids.error)}
           aria-invalid={errorKey === "errors.invalidEmail" || undefined}
         />
-        <p className="text-sm text-text-muted">{t("emailHint")}</p>
+        {errorLine}
         {captcha}
-        {errorBlock}
-        <button type="submit" className="btn btn-primary" aria-disabled={blocked} disabled={busy}>
+        {offlineLine}
+        <button
+          type="submit"
+          className="btn btn-primary mt-2"
+          aria-disabled={blocked}
+          aria-describedby={describedBy(!online && ids.offline)}
+        >
           {busy ? t("sending") : t("sendCode")}
         </button>
       </form>
@@ -117,59 +150,72 @@ export function SignInForm({ configured, turnstileSiteKey, purgeCaches, locale, 
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <OfflineBanner text={copy.offlineBanner} />
       <p role="status">{t("codeSentNeutral")}</p>
-      <form action={action} className="flex flex-col gap-4" noValidate>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium break-all">{state.email}</span>
+        <form action={action}>
+          <input type="hidden" name="intent" value="restart" />
+          <button type="submit" className="btn btn-text px-0" disabled={busy}>
+            {t("useDifferentEmail")}
+          </button>
+        </form>
+      </div>
+      <form action={action} onSubmit={preventIfBlocked} className="flex flex-col gap-3" noValidate>
         <input type="hidden" name="intent" value="verify" />
-        <label htmlFor={codeId} className="font-medium">
+        <label htmlFor={ids.code} className="font-medium">
           {t("codeLabel")}
         </label>
         <input
-          id={codeId}
+          ref={codeRef}
+          id={ids.code}
           name="code"
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={6}
           required
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           className="field-input tracking-[0.4em]"
-          aria-describedby={errorKey ? errorId : undefined}
+          aria-describedby={describedBy(errorKey && ids.error)}
           aria-invalid={errorKey === "errors.badCode" || undefined}
         />
-        {errorBlock}
-        <button type="submit" className="btn btn-primary" aria-disabled={blocked} disabled={busy}>
+        {errorLine}
+        {offlineLine}
+        <button
+          type="submit"
+          className="btn btn-primary mt-2"
+          aria-disabled={blocked}
+          aria-describedby={describedBy(!online && ids.offline)}
+        >
           {busy ? t("verifying") : t("verify")}
         </button>
       </form>
-      <form action={action} className="flex flex-col gap-2">
+      <form
+        action={action}
+        onSubmit={(event) => {
+          if (blocked || secondsLeft > 0) event.preventDefault();
+        }}
+        className="flex flex-col gap-2"
+      >
         <input type="hidden" name="intent" value="resend" />
         {secondsLeft > 0 ? null : captcha}
         <button
           type="submit"
-          className="btn btn-secondary"
-          disabled={busy || secondsLeft > 0}
+          className="btn btn-text self-start px-0"
           aria-disabled={blocked || secondsLeft > 0}
         >
-          {secondsLeft > 0 ? t("resendIn", { seconds: secondsLeft }) : t("resend")}
+          {t("resend")}
         </button>
-      </form>
-      <form action={action}>
-        <input type="hidden" name="intent" value="restart" />
-        <button type="submit" className="btn btn-text" disabled={busy}>
-          {t("useDifferentEmail")}
-        </button>
+        {secondsLeft > 0 ? (
+          <p className="text-sm text-text-muted" aria-live="off">
+            {t("resendIn", { seconds: secondsLeft })}
+          </p>
+        ) : null}
       </form>
     </div>
   );
 }
-
-type ErrorKey =
-  | "errors.invalidEmail"
-  | "errors.badCode"
-  | "errors.rateLimited"
-  | "errors.captchaFailed"
-  | "errors.unavailable";
 
 function errorMessageKey(reason: SignInState["error"]): ErrorKey | null {
   switch (reason) {
