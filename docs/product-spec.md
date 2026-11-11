@@ -319,7 +319,7 @@ Calm, direct, kind, brief. Second person, sentence case. No exclamation marks in
 |---|---|---|
 | Q3 | Include `specific_days` goals? | **Cut from MVP.** "N per week" covers most cases. |
 | Q4 | Streaks? | **None in MVP.** |
-| Q5 | Pause? | **Yes**, effective today only. |
+| Q5 | Pause? | **Yes**. Takes effect **tomorrow**, resume takes effect today (D1, AC-H5/H8). |
 | Q7 | Daily quote? | **In scope, off by default.** Original or public-domain only. |
 | Q8 | Data export? | **Yes:** JSON plus CSV of entries. |
 | Q9 | Reminders? | **None in MVP.** |

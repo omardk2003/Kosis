@@ -6,7 +6,9 @@ Owner: `lead-architect` · Status: **recommendation, owner to confirm before Pha
 
 **Expected volume (MVP):** well under 10,000 emails per month.
 
-**Not needed yet.** Local development uses the Supabase CLI's built-in mail catcher (Mailpit), and staging can use Supabase's built-in sender while volumes stay tiny. Custom SMTP becomes **required before production launch**, because Supabase's built-in sender is rate-limited and not meant for production.
+**Not needed yet.** Local development uses the Supabase CLI's built-in mail catcher (Mailpit).
+
+**Staging caveat:** Supabase's built-in sender **only delivers to the project's team members' email addresses** and is limited to a few emails per hour. Staging can use it for internal testing only. As soon as outside testers sign in on staging, staging needs the same custom SMTP. Custom SMTP is **required before production launch** in any case.
 
 **Pricing caveat.** Prices come from web search results dated 2026, mostly third-party comparisons. The vendors' own pricing pages could not be fetched from this session, because its network allowlist blocked them. **Verify on each vendor's site before signing up.**
 
@@ -22,7 +24,7 @@ Owner: `lead-architect` · Status: **recommendation, owner to confirm before Pha
 |---|---|---|---|---|---|
 | **Scaleway Transactional Email (TEM)** | France / EU (FR) | Yes (STARTTLS) | 300 emails/month | ~€0.25 per 1,000 after that, no monthly fee (Essential). The Scale plan is ~€80/month with a dedicated IP | ISO 27001. Infrastructure-style, so the cheapest at low volume. A default quota of 10k/month that can be raised. Fewer deliverability tools than marketing-oriented providers |
 | **Brevo** (formerly Sendinblue) | France / EU | Yes | ~300 emails/day | ~$9/month | EU-built and GDPR-focused. Marketing and transactional in one account, so more surface area than we need |
-| **Mailjet** (Sinch group) | France origin / EU-hosted | Yes | ~6,000/month (200/day) | ~$9/month | ISO 27001. A generous free tier. Part of a large non-EU group, so check the group DPA |
+| **Mailjet** (Sinch group) | France origin, owned by Sinch (Sweden, EU) / EU-hosted | Yes | ~6,000/month (200/day) | ~$9/month | ISO 27001. A generous free tier. Check the group DPA |
 | **MailPace** | UK company / EU-hosted | Yes | none | ~$10/month for 10k | Transactional-only, privacy-focused, a small vendor |
 | Amazon SES (eu-west-1 or eu-central-1) | US company / EU region | Yes | (AWS free tier varies) | ~$0.10 per 1,000 | The cheapest at scale, but a US parent (SCCs needed), more setup (IAM, sandbox exit), and a new AWS account |
 | Postmark | US / US | Yes | 100/month | ~$15/month | Excellent deliverability, but not EU-hosted |
@@ -34,8 +36,8 @@ Owner: `lead-architect` · Status: **recommendation, owner to confirm before Pha
 **Primary: Scaleway TEM.**
 - It's EU-headquartered and EU-hosted.
 - It's transactional-only, so it has the smallest data surface.
-- It's the cheapest at our volume, likely €0–3/month.
 - It supports SMTP for Supabase, and it's ISO 27001 certified.
+- Its cost is low, likely €0–3/month. Price isn't the deciding factor, though: Mailjet's and Brevo's free tiers would also cost €0 below roughly 6–9k emails a month. The case for Scaleway is EU ownership and its transactional-only scope.
 
 **Fallback: Mailjet or Brevo.** Use one of these if Scaleway's deliverability to major inboxes (Gmail, Outlook) proves weak in the staging test.
 

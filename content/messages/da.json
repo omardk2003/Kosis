@@ -20,11 +20,11 @@
   "signIn": {
     "title": "Log ind",
     "emailLabel": "E-mail",
-    "emailHint": "Vi sender dig en kode på 6 cifre. Du behøver ingen adgangskode.",
+    "emailHint": "Vi sender dig en 6-cifret kode. Du behøver ingen adgangskode.",
     "sendCode": "Send kode",
     "sending": "Sender…",
-    "codeSentNeutral": "Hvis denne e-mail kan logge ind, har vi sendt en kode på 6 cifre.",
-    "codeLabel": "Kode på 6 cifre",
+    "codeSentNeutral": "Hvis e-mailadressen kan bruges til at logge ind, har vi sendt en 6-cifret kode til den.",
+    "codeLabel": "6-cifret kode",
     "verify": "Log ind",
     "verifying": "Tjekker…",
     "resend": "Send en ny kode",
@@ -35,7 +35,7 @@
     "captchaLabel": "Sikkerhedstjek",
     "errors": {
       "invalidEmail": "Skriv en e-mailadresse, fx navn@eksempel.dk.",
-      "badCode": "Koden passer ikke. Tjek den, og prøv igen.",
+      "badCode": "Koden virkede ikke. Den kan være skrevet forkert eller udløbet. Tjek den, eller send en ny kode.",
       "expiredCode": "Koden er udløbet. Bed om en ny.",
       "rateLimited": "For mange forsøg. Vent lidt, og prøv så igen.",
       "captchaFailed": "Sikkerhedstjekket gik ikke igennem. Prøv igen.",
