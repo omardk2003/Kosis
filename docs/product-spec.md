@@ -78,7 +78,12 @@ Most habit apps optimize for planning (elaborate setups, fixed-time reminders) a
   - At most **one non-voided entry per habit per day**.
 - **Void:** a separate, insert-only record that cancels an entry, with a timestamp and reason. The user can void with reason `undo` or `correction`. The system voids with `replaced`. Voids are allowed only for entries with `occurred_on` in today − 7 … today. Voided entries are excluded from stats but retained in history (under "Show removed entries") and in the export.
 - **Late log:** an entry whose `occurred_on` is before "today" at the time it's logged. It's allowed for **today − 7 … today − 1** and always labeled "logged later".
-- **Today (server):** the local date in the profile timezone. If the timezone changed in the last 24 h, "today" is the **earliest** local date under any timezone in effect during that period, so switching timezones can't avoid the late label or log a day early.
+- **Today (server):** the local date in the profile timezone. If the timezone changed in the last 24 h:
+  - you can log only up to the **earliest** local date under any timezone in effect during that period
+  - the 7-day window counts back from the **latest** such date
+  - an entry counts as on time only for the latest date
+
+  So switching timezones can't avoid the late label, log a day early, or widen the window.
 - **Active day:** a day on or after the habit's creation date on which its status is `active`.
 - **Planned / completed:** the denominator and numerator per habit per week (§7).
 

@@ -127,7 +127,7 @@ create table habit_status_events (             -- insert-only; status is derived
   seq            bigint generated always as identity,
   habit_id       uuid not null, user_id uuid not null,
   status         text not null check (status in ('active','paused','archived')),
-  effective_on   date not null,                -- inclusive; always = local today at insert
+  effective_on   date not null,                -- inclusive; pause/archive = server today + 1, resume/unarchive = server today
   created_at     timestamptz not null default now(),
   foreign key (habit_id, user_id) references habits(id, user_id) on delete cascade);
 
@@ -182,29 +182,51 @@ All `created_at`, `logged_at`, `voided_at`, `effective_at` and `updated_at` valu
 - **Goal on date d:** the row with `effective_from ≤ d`, ordered by `seq desc`, limit 1. The newest edit wins, so it also supersedes a pending version.
 - **Status on date d:** the same rule over `habit_status_events` (`effective_on ≤ d`). With no event, the status is `active` from `created_on`. Pause and archive events have `effective_on = today + 1`. Resume and unarchive events have `effective_on = today`.
 - **One entry per habit per day:** `log_completion` and `replace_with_full` both take `pg_advisory_xact_lock(private.entry_lock_key(habit_id, occurred_on))`. They then reject the write if a non-voided entry already exists. A partial unique index can't see the voids table.
-- **Server "today"** — `private.server_today(user_id, p_now)`:
+- **Server "today"** — `private.server_today(user_id, p_now) → (lo date, hi date)`. Over every timezone `tz` in effect at any point in `(p_now − 24h, p_now]`, according to `profile_timezone_events`:
   ```
-  min over every timezone tz whose interval overlaps (p_now − 24h, p_now] of (p_now at time zone tz)::date
+  lo = min((p_now at time zone tz)::date)
+  hi = max((p_now at time zone tz)::date)
   ```
-  This uses `profile_timezone_events`. The function is used for every window check and for `source`, so a timezone switch can neither avoid the "late" label nor log a future day (AR-B2, *owner approval D2*).
+  If there are no event rows, it falls back to `profiles.timezone`, so `lo = hi`. If no timezone is found at all, it returns NULL and every caller fails closed.
+  - **Upper bounds use `lo`:** you can't log a day that hasn't started in every recent timezone.
+  - **Lower bounds use `hi`:** the window is `hi − 7`, so a switch can't stretch the window backwards.
+  - **`source = 'on_time'` only if `d = hi`:** otherwise it's `late`, so switching west can't relabel yesterday as on time.
+  - `get_today` returns `lo` as "today".
+
+  Without a recent timezone change, `lo = hi` and nothing differs from the simple rule (AR-B2 and verification V1, *owner approval D2*).
 
 ### 4.3 Write path: the database is the only enforcement point (ADR-0006)
-**Grants (first migration, and re-asserted by a CI test):**
+**Grants (first migration, and re-asserted by a CI test).** One statement per object type. `for role postgres` is the role that owns migrations; verify it in ADR-0006.
 ```sql
-alter default privileges in schema public revoke all on tables    from public, anon, authenticated;
-alter default privileges in schema public revoke all on functions from public, anon, authenticated;
-alter default privileges in schema public revoke all on sequences from public, anon, authenticated;
-revoke all on all tables, functions, sequences in schema public from public, anon, authenticated;
-create schema private;  revoke all on schema private from public, anon, authenticated;  -- not exposed via the API
-grant select on <each table> to authenticated;          -- explicit, table by table
-grant execute on function public.<each rpc> to authenticated;  -- explicit, function by function
+-- future objects created by the migration role
+alter default privileges for role postgres in schema public revoke all on tables    from public, anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on sequences from public, anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on functions from anon, authenticated;
+alter default privileges for role postgres revoke execute on functions from public;  -- global: PUBLIC EXECUTE can't be revoked per schema
+-- existing objects
+revoke all on all tables    in schema public from public, anon, authenticated;
+revoke all on all sequences in schema public from public, anon, authenticated;
+revoke all on all functions in schema public from public, anon, authenticated;
+-- private schema: never in the API's exposed schemas
+create schema private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;                                -- only for the read helpers below
+grant execute on function private.server_today(uuid, timestamptz) to authenticated;
+grant execute on function private.status_on(uuid, date) to authenticated;
+-- explicit allow-list
+grant select on <each table> to authenticated;
+grant execute on function public.<each rpc>(<args>) to authenticated;
 ```
 - RLS is enabled on **every** table with the policy `using (user_id = (select auth.uid()))`. The `anon` role has no access.
 - **Structure:** each public RPC is a thin `SECURITY DEFINER` wrapper with `set search_path = ''`. It calls `private.<name>(auth.uid(), now(), …)`, where the logic lives and takes `p_user` and `p_now` as parameters. **No clock override exists anywhere.** Tests call the `private.*` functions directly with chosen `p_now` values against the local database only (QA-1).
 - **Guards at the top of every write RPC:** `if auth.uid() is null then raise` and `if not exists(profile) then raise`. The second guard makes a deleted account's still-valid JWT useless.
 - **Asserts are null-safe:** `if (cond) is not true then raise …`.
 - **Every query inside a DEFINER function filters `user_id = p_user`.**
-- **Read RPCs (`get_today`, `get_progress`) are `SECURITY INVOKER`**, so RLS applies to them. They call `private.server_today`, so `authenticated` gets `USAGE` on schema `private` and `EXECUTE` on **only** the read-only helpers `private.server_today` and `private.status_on`. These helpers read only the caller's rows under RLS, and since `private` isn't exposed through the API they can't be called over HTTP. H17 asserts exactly this grant set.
+- **Read RPCs (`get_today`, `get_progress`) are `SECURITY INVOKER`**, so RLS applies to them. They call `private.server_today`, so `authenticated` gets `USAGE` on schema `private` and `EXECUTE` on **only** the read-only helpers `private.server_today` and `private.status_on`.
+- Both helpers are **SECURITY INVOKER**. They read only the caller's rows under RLS.
+- `private` isn't exposed through the API, so the helpers can't be called over HTTP.
+- No `private` SECURITY DEFINER function is executable by `authenticated`.
+- H17 asserts exactly this grant set (verification V3).
 - **Error messages** never echo user input.
 
 **RPCs:**
@@ -232,14 +254,14 @@ A **valid tz** is a row in `pg_timezone_names` whose name is `UTC` or contains `
 `log_completion` pseudo-code:
 ```sql
 -- public.log_completion → private.log_completion(p_user := auth.uid(), p_now := now(), ...)
-today := private.server_today(p_user, p_now);   -- conservative across tz changes
-d     := coalesce(p_occurred_on, today);        -- on-time path sends no date
+(lo, hi) := private.server_today(p_user, p_now);  -- lo = hi unless the tz changed in the last 24 h
+d     := coalesce(p_occurred_on, lo);           -- on-time path sends no date
 assert (habit owned by p_user) is not true → raise;
-assert (d between greatest(h.created_on, today - 7) and today) is not true → raise;
+assert (d between greatest(h.created_on, hi - 7) and lo) is not true → raise;   -- NULL fails closed
 assert (private.status_on(habit, d) = 'active') is not true → raise;
 perform pg_advisory_xact_lock(private.entry_lock_key(habit, d));
 assert no non-voided entry for (habit, d);
-insert ... source := case when d < today then 'late' else 'on_time' end,
+insert ... source := case when d = hi then 'on_time' else 'late' end,
            logged_at := p_now, logged_tz := profile.timezone;
 ```
 - **Account deletion (SR-H5):**

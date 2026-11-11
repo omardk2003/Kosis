@@ -63,10 +63,21 @@ Owner: `qa-testing-engineer` · Status: **v0.3, reviewed, pending owner approval
 | H14 | Late window: today−7 accepted, today−8 rejected, future rejected, before `created_on` rejected, paused day rejected. | DB |
 | H15 | Recovery trigger matrix: daily 2-missed (needs ≥ 2 active days); weekly 0-week; two below-target weeks; no-plan weeks skipped; nothing mid-week; lapse key stable across a run; auto-resolve on an entry ≥ the key date, including a late log; one card max; a dismissed lapse never returns. | Domain + UI |
 | H16 | Cross-user: user B can't read or write any of user A's rows, including via RPC with A's ids. | DB |
-| H17 | **Catalog drift:** every `public` table has RLS enabled and no write grants. No `public` function is executable by `anon`/`PUBLIC`. Every SECURITY DEFINER function has `search_path=''`. `private` isn't exposed. Default privileges are revoked. | DB |
+| H17 | **Catalog drift:**
+- Every `public` table has RLS enabled and no write grants.
+- No `public` function is executable by `anon` or `PUBLIC`.
+- Every SECURITY DEFINER function has `search_path=''`.
+- `private` isn't in the exposed schemas.
+- `authenticated` can execute only `private.server_today` and `private.status_on`, and both are INVOKER.
+- No `private` DEFINER function is executable by `authenticated`.
+- Default privileges are revoked, checked via `pg_default_acl`. | DB |
 | H18 | Pause/archive take effect **tomorrow**: today stays planned and keeps its entry, and pausing at 23:59 doesn't erase an undone day. Resume takes effect today. | DB + domain |
 | H19 | Voids and `replace_with_full` only for `occurred_on ≥ today − 7`. Clients can't send reason `replaced`. Replacement requires a minimum, non-voided entry on an active day, and the new entry is `late` if the day is before today. | DB |
-| H20 | **Timezone switch:** switching to UTC−12 and logging "yesterday" still yields `late`. Switching to UTC+14 can't log a day ahead. The conservative "today" lasts 24 h. | DB |
+| H20 | **Timezone switch:**
+- Switching to UTC−12 and logging "yesterday" still yields `late`, because only `d = hi` is on time.
+- Switching to UTC+14 can't log a day ahead (upper bound `lo`).
+- The window doesn't widen (lower bound `hi − 7`).
+- These rules last 24 h. With no event rows, the fallback is `profiles.timezone`. With no timezone at all, the call fails closed. | DB |
 | H21 | Deleted account: a still-valid JWT can't call any RPC, because the profile guard rejects it. | DB |
 
 ## 5. Time-travel fixtures
