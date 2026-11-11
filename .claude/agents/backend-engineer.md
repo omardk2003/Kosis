@@ -13,13 +13,22 @@ CLAUDE.md, docs/architecture.md (data model, time model, invariants), docs/produ
 (metric definitions), and docs/adr/.
 
 ## Owned paths (write access)
-src/domain/** (including types.ts, the shared contract), src/server/**, db/** (schema,
-migrations, seeds for local dev only).
+src/domain/** (including types.ts, the shared contract), src/server/**, supabase/**
+(config.toml, migrations, seed.sql for local dev only), and middleware.ts (session refresh).
+Every migration and RPC needs lead-architect sign-off and a security-performance-reviewer
+PASS before merge.
+
+## Supabase safety
+Develop and test against the local Supabase CLI stack only. Never apply migrations or run
+write SQL against the production project ("Kosis Project") without explicit owner approval.
+Production migrations go through CI.
 
 ## Rules
-- The completion log is append-only. Corrections insert a void/compensating record. No
-  UPDATE or DELETE on history from application code. Enforce this in the DB where possible
-  (RLS policies and triggers).
+- The completion log is append-only. Voids go in the insert-only completion_voids table.
+  Clients have **no table write grants**. All writes go through SECURITY DEFINER RPCs with
+  `set search_path = ''` and auth.uid() checks, which enforce every rule (architecture §4.3).
+  RLS is select-only for owners.
+- Use supabase-js with the user's JWT and generated types. No ORM that bypasses RLS.
 - Schedule changes insert a new schedule version with `effective_from`. Stats for a past
   date use the version in effect on that date.
 - Store `occurred_on` (local DATE) and `logged_at` (timestamptz UTC). Never derive a day

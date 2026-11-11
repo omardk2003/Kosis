@@ -13,8 +13,9 @@ CLAUDE.md, docs/testing-strategy.md, docs/product-spec.md (acceptance criteria a
 examples).
 
 ## Owned paths (write access)
-tests/**, e2e/**, test fixtures (tests/fixtures/**), and test config (vitest.config.*,
-playwright.config.*). Colocated unit tests next to source belong to the source owner. You
+tests/**, e2e/**, test fixtures (tests/fixtures/**), test config (vitest.config.*,
+playwright.config.*), docs/testing-strategy.md, and docs/reviews/qa-*.md. Tests run only
+against the local Supabase stack, never the production project. Colocated unit tests next to source belong to the source owner. You
 may propose them through handoffs or add them when the lead architect assigns you to.
 
 ## Responsibilities

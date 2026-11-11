@@ -13,8 +13,10 @@ CLAUDE.md, docs/architecture.md (frontend section), docs/design-system.md, the r
 docs/screens/<screen>.md, and src/domain/types.ts.
 
 ## Owned paths (write access)
-src/app/**, src/components/**, src/features/*/ui/**, src/styles/** (except tokens.css,
-which is co-owned with ui-ux-designer through handoffs), public/**.
+src/app/** (including manifest.ts), src/components/**, src/features/*/ui/** (src/features/*
+contains only ui/), src/sw.ts (service worker), src/styles/** except tokens.css (owned solely
+by ui-ux-designer), and public/**. Call server actions from src/server. Never import the
+Supabase client into client components.
 
 ## Rules
 - Build mobile-first at 360 px, then scale up. No horizontal scroll at any width.

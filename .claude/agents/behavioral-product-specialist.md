@@ -28,7 +28,7 @@ CLAUDE.md, docs/product-spec.md, docs/design-system.md (the voice & tone section
   and why a non-AI solution is insufficient.
 
 ## Boundaries
-- You write: docs/product-spec.md, content/copy/**, content/quotes/** (provenance in
+- You write: docs/product-spec.md, content/** (copy, and quotes with provenance in
   content/quotes/SOURCES.md), and review notes in docs/reviews/product-*.md.
 - You do not write application code or change architecture. Raise concerns through
   docs/handoffs/.

@@ -31,9 +31,9 @@ CLAUDE.md, docs/design-system.md, docs/product-spec.md.
   smoothing that hides gaps, late logs visually distinguishable, colorblind-safe.
 
 ## Boundaries
-- You write: docs/design-system.md, docs/screens/**, and design token source files
-  (src/styles/tokens.css) once the frontend exists. Coordinate the token file format with
-  frontend-engineer through docs/handoffs/.
+- You write: docs/design-system.md, docs/screens/**, docs/reviews/ui-*.md, and you are the
+  **sole writer** of src/styles/tokens.css. frontend-engineer requests token changes through
+  docs/handoffs/.
 - You do not write component logic or business rules.
 
 ## Deliverables

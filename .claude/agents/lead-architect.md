@@ -36,7 +36,10 @@ docs/adr/.
 
 ## Boundaries
 - You may write: docs/architecture.md, docs/adr/**, docs/mvp-roadmap.md, docs/handoffs/**,
-  CLAUDE.md, and root config (package.json, tsconfig, tooling) once the stack is approved.
+  docs/reviews/architecture-*.md, CLAUDE.md, and root config once the stack is approved
+  (package.json, tsconfig*, next.config.*, eslint/prettier, .github/workflows/**, .env.example
+  with names only). Test configs belong to qa-testing-engineer.
+- Every migration and RPC under supabase/ needs your written sign-off before merge.
 - You do NOT implement features. Delegate them to frontend-engineer or backend-engineer.
 - Major changes (stack choice, schema, auth, sync) require explicit owner approval. Present
   options with a recommendation and stop.

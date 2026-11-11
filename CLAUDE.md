@@ -7,9 +7,14 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 ## Current status
 
-- **Phase:** Specification. No application code exists yet (greenfield as of 2026-11-11).
-- **Gate:** No feature implementation until the owner approves `docs/mvp-roadmap.md` Phase 0
-  and the open questions in `docs/product-spec.md` §10 are resolved.
+- **Phase:** Specification v0.2 (in review). No application code exists yet.
+- **Owner decisions (2026-11-11):**
+  - Mobile-first PWA, with native apps possible later.
+  - Supabase Auth is required from launch.
+  - Late logging is allowed up to 7 days back.
+  - Product name: DISCIPLINE. Repository name: Kosis.
+- **Gate:** No feature implementation until the owner approves v0.2 and the proposed defaults
+  in `docs/product-spec.md` §10.2.
 - Source of truth, in order: `docs/product-spec.md` → `docs/architecture.md` →
   `docs/design-system.md` → `docs/testing-strategy.md` → `docs/mvp-roadmap.md`.
   If the code and the docs disagree, stop and flag it. Don't silently "fix" either one.
@@ -33,6 +38,15 @@ real progress honestly, and recover after missed days without guilt or fake stat
 7. **Licensed content only.** Quotes and assets must be original, public domain, or
    explicitly licensed. Record the provenance in `content/quotes/SOURCES.md`.
 
+## Supabase safety
+
+- The Supabase project **"Kosis Project"** is **production**.
+- Never run write SQL, apply migrations, or create, reset, or delete branches against it
+  without explicit owner approval in the conversation. Read-only inspection is allowed.
+- Develop and test against the local Supabase CLI stack only.
+- Production migrations go through CI.
+- Never commit secrets or `.env*` files. The service-role key is server-only.
+
 ## Engineering rules
 
 - Preserve working functionality. Prefer small, reviewable diffs over rewrites.
@@ -51,12 +65,12 @@ real progress honestly, and recover after missed days without guilt or fake stat
 
 | Agent | Model | Owns |
 |---|---|---|
-| `lead-architect` | opus | Architecture, data model, ADRs, cross-agent coordination, merge decisions |
+| `lead-architect` | opus | Architecture, ADRs, roadmap, root config/CI, sign-off on every migration & RPC |
 | `behavioral-product-specialist` | opus | Product spec, behavioral rules, copy tone, metric definitions |
-| `ui-ux-designer` | opus | Design system, screen specs, interaction & state design |
-| `frontend-engineer` | sonnet | `src/app`, `src/components`, `src/features/*/ui`, styles |
-| `backend-engineer` | sonnet | `src/domain`, `src/server`, `db/`, migrations, API |
-| `qa-testing-engineer` | sonnet | `tests/`, `e2e/`, test fixtures, CI test config |
+| `ui-ux-designer` | opus | Design system, screen specs, **sole writer of `src/styles/tokens.css`** |
+| `frontend-engineer` | sonnet | `src/app`, `src/components`, `src/features/*/ui`, `src/sw.ts`, `public/`, styles except tokens |
+| `backend-engineer` | sonnet | `src/domain`, `src/server`, `supabase/` (migrations, RPCs), `middleware.ts` |
+| `qa-testing-engineer` | sonnet | `tests/`, `e2e/`, fixtures, `vitest.config.*`, `playwright.config.*`, `docs/testing-strategy.md` |
 | `security-performance-reviewer` | sonnet | Reviews only. Writes reports to `docs/reviews/` |
 
 ### Collaboration protocol
@@ -64,6 +78,7 @@ real progress honestly, and recover after missed days without guilt or fake stat
 1. **File ownership.** Each agent edits only the paths it owns (see the agent files). To
    change a file you don't own, write a change request in `docs/handoffs/<date>-<topic>.md`
    addressed to the owner. Don't edit the file.
+   Colocated unit tests belong to the owner of the source file next to them.
 2. **Contracts first.** Shared types live in `src/domain/types.ts` (owned by
    `backend-engineer`). The frontend consumes them and never redefines them.
 3. **One writer per file per task.** When the lead architect runs agents in parallel, it
