@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 import { readSupabaseEnv } from "../env";
+import { sessionCookieOptions } from "./cookie-options";
 
 /**
  * Refreshes the Supabase session inside the proxy and reports whether the caller is signed in.
@@ -15,6 +16,7 @@ export async function refreshSession(
   if (!env) return { response, signedIn: false, configured: false };
 
   const supabase = createServerClient(env.url, env.publishableKey, {
+    cookieOptions: sessionCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();

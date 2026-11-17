@@ -3,6 +3,9 @@
   "framework": "nextjs",
   "regions": ["dub1"],
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": {
+      "**": false,
+      "claude/project-setup": true
+    }
   }
 }

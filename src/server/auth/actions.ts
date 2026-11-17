@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { readTurnstileSiteKey } from "../env";
 import { createSupabaseServerClient } from "../supabase/server";
 import {
   mapSendError,
@@ -19,6 +20,14 @@ export type SignInState =
 export async function sendOtp(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const email = normalizeEmail(formData.get("email"));
   if (!email) return { step: "email", error: "invalid_email" };
+
+  // Fail closed in Vercel Production when Turnstile is missing or uses a Cloudflare test key.
+  try {
+    readTurnstileSiteKey();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "Turnstile guard failed");
+    return { step: "email", error: "not_configured" };
+  }
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { step: "email", error: "not_configured" };

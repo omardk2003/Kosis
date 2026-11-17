@@ -22,7 +22,13 @@ DISCIPLINE is a mobile-first PWA (owner decision Q1) that requires accounts (Q2)
 | vitest 5.1.0, @playwright/test 1.65.0, @axe-core/playwright 4.14.0 | | Tests |
 | supabase (CLI) 3.1.0 | | Local stack and migrations. CI uses the same version |
 
-- **There is no browser Supabase client.** All Auth and DB calls run on the server, in server actions and the proxy. This keeps cookies httpOnly and keeps `supabase-js` out of the client bundle. An ESLint rule forbids `createBrowserClient`.
+- **There is no browser Supabase client.** All Auth and DB calls run on the server, in server actions and the proxy. This keeps `supabase-js` out of the client bundle. An ESLint rule forbids `createBrowserClient`.
+- **Session cookies** (updated 2026-11-17):
+  - `@supabase/ssr` defaults to `httpOnly: false`, so we override it explicitly in one place, `src/server/supabase/cookie-options.ts`. Both Supabase clients use it: the server client and the proxy.
+  - The flags are `httpOnly: true` and `SameSite=Lax` on path `/`. `Secure` is always on, on Vercel (Preview and Production) and in any production build. It's off only for `next dev` on `http://localhost`.
+  - Supabase's documentation says httpOnly cookies work only for apps where all session logic runs on the server, which matches this architecture. Refresh happens in `src/proxy.ts`: `getClaims()` exchanges the single-use refresh token and writes the new pair with `Set-Cookie`.
+  - **Constraint for future features:** any feature that needs the session in the browser (for example Supabase Realtime from the client) needs a new ADR first.
+  - **Tests:** `tests/unit/cookie-options.test.ts` and `e2e/session.spec.ts`. The E2E test checks the flags, that page JS can't see the cookie, a forced refresh with token rotation, a fail-safe to sign-in when the refresh token is invalid, and that sign-out clears the cookies.
 - **Session checks:** the proxy refreshes the session with `getClaims()`. Protected pages re-check with `getClaims()`, and authorization never relies on the proxy alone.
 - **CSP:** a nonce per request, set in `src/proxy.ts`:
   - `script-src 'self' 'nonce-…' 'strict-dynamic' https://challenges.cloudflare.com`

@@ -2,6 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { readSupabaseEnv } from "../env";
+import { sessionCookieOptions } from "./cookie-options";
 
 /**
  * Server-side Supabase client bound to the user's session cookies (ADR-0006).
@@ -12,6 +13,7 @@ export async function createSupabaseServerClient() {
   if (!env) return null;
   const cookieStore = await cookies();
   return createServerClient(env.url, env.publishableKey, {
+    cookieOptions: sessionCookieOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();
