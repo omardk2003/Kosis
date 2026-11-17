@@ -1,0 +1,50 @@
+{
+  "name": "discipline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DISCIPLINE: less planning, more doing. Mobile-first habit PWA.",
+  "engines": {
+    "node": ">=22.0.0 <23"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check:bundle": "node tests/perf/check-bundle.mjs",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@marsidev/react-turnstile": "1.6.3",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
+    "next": "16.4.6",
+    "next-intl": "4.15.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.0",
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
+    "prettier": "3.10.0",
+    "supabase": "3.1.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0"
+  }
+}

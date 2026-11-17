@@ -1,0 +1,144 @@
+/*
+ * DISCIPLINE design tokens
+ * Source of truth: docs/design-system.md (v0.4). Sole writer: ui-ux-designer.
+ * Consumers (frontend-engineer) map these via Tailwind v4 @theme in a separate file and
+ * request changes through docs/handoffs/. Do not add tokens here from another role.
+ *
+ * Rules carried by these values (see design-system §2, §7, §11):
+ * - Every text pair is >= 4.5:1; informative graphics/edges are >= 3:1.
+ * - --border is decorative only. Informative edges use --border-strong.
+ * - --missed is never red and is always paired with a 1px --border-strong edge.
+ * - --danger is for destructive actions only, never for habit status or form errors.
+ * - Only the primary action uses an --accent fill.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Color: light (default) ---------------------------------------- */
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --text: #1c1b19;
+  --text-muted: #5e5a53;
+  --border: #e4e0d8;
+  --border-strong: #8f897e;
+  --accent: #2f5d50;
+  --accent-contrast: #ffffff;
+  --late: #8a6a2e;
+  --missed: #d9d4ca;
+  --danger: #9b2c2c;
+  --focus: #1f6feb;
+
+  /* ---- Typography ----------------------------------------------------- */
+  /*
+   * System stacks for now. Later: self-host Fraunces (display, OFL) and Inter (body, OFL)
+   * with font-display: swap, <= 2 font files on the critical path (design-system §3).
+   * Swap only these two variables when that lands.
+   */
+  --font-display:
+    ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, Cambria, "Times New Roman",
+    serif;
+  --font-body:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  /* Scale (16px base). Nothing renders below --text-xs (13px). */
+  --text-xs: 0.8125rem; /* 13px  labels, meta */
+  --text-sm: 0.9375rem; /* 15px  secondary lines */
+  --text-md: 1rem; /* 16px  body, inputs (prevents iOS zoom) */
+  --text-lg: 1.25rem; /* 20px  section headings */
+  --text-xl: 1.5rem; /* 24px  page headings */
+  --text-2xl: 2rem; /* 32px  primary action label (display), large headings */
+  --text-stat: 2.75rem; /* 44px  stat numerals (tabular) */
+
+  --leading-body: 1.5;
+  --leading-display: 1.15;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* Readable line length for running text */
+  --measure: 62ch;
+
+  /* ---- Spacing (4px grid) -------------------------------------------- */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* ---- Layout -------------------------------------------------------- */
+  --gutter: 16px; /* mobile gutter; equal left and right */
+  --content-max: 640px; /* single column, Today and app screens */
+  --form-max: 400px; /* sign-in and short forms */
+  --target-min: 44px; /* minimum touch target, every interactive element */
+  --control-height: 48px; /* text inputs, OTP input, secondary buttons */
+  --primary-action-height: 56px;
+
+  /* ---- Radii --------------------------------------------------------- */
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation ----------------------------------------------------- */
+  /* Hairline borders by default. One shadow level, Action Mode sheet only. */
+  --shadow-sheet: 0 8px 32px rgb(28 27 25 / 0.12);
+
+  /* ---- Focus ring ---------------------------------------------------- */
+  /* 2px ring, 2px --bg offset; never animated; never obscured by sticky UI. */
+  --focus-ring-color: var(--focus);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-offset-color: var(--bg);
+
+  /* ---- Data visualization ------------------------------------------- */
+  --viz-cell-min: 28px;
+  --viz-zero-stub: 2px; /* 0% week stub on the baseline, --border-strong */
+  --viz-late-ring-stroke: 2px;
+  --viz-minimum-dot: 6px;
+  --viz-pending-dash: 1.5px;
+  --viz-hatch-line: 2px;
+  --viz-hatch-pitch: 5px;
+
+  /* ---- Motion -------------------------------------------------------- */
+  /* Transform and opacity only. No overshoot, no bounce. */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --completion-scale: 1.04; /* check draw-in: 1 -> 1.04 -> 1 */
+  --press-scale: 0.985; /* button press feedback */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141413;
+    --surface: #1e1d1b;
+    --text: #edebe6;
+    --text-muted: #a8a39a;
+    --border: #2e2c29;
+    --border-strong: #6e6960;
+    --accent: #7fb8a4;
+    --accent-contrast: #0f1f1a;
+    --late: #d3b37a;
+    --missed: #3a3733;
+    --danger: #f2a3a3;
+    --focus: #79b8ff;
+
+    --shadow-sheet: 0 8px 32px rgb(0 0 0 / 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* Replace movement with opacity fades <= 120ms (design-system §5). */
+    --duration-fast: 120ms;
+    --duration-base: 120ms;
+    --duration-slow: 120ms;
+    --completion-scale: 1;
+    --press-scale: 1;
+  }
+}

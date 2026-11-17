@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Map design tokens (src/styles/tokens.css, owned by ui-ux-designer) into Tailwind utilities. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-late: var(--late);
+  --color-missed: var(--missed);
+  --color-danger: var(--danger);
+  --color-focus: var(--focus);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  line-height: var(--leading-body);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-16);
+  top: -100px;
+}
+.skip-link:focus {
+  top: var(--space-16);
+  background: var(--surface);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-control);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-min);
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-control);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.btn:active {
+  transform: scale(var(--press-scale));
+}
+/* Full contrast when disabled: the visible reason next to the button explains why (UI-8). */
+.btn[aria-disabled="true"],
+.btn:disabled {
+  cursor: not-allowed;
+}
+.btn-primary {
+  font-family: var(--font-display);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid var(--accent);
+  width: 100%;
+  min-height: var(--primary-action-height);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.btn-text {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.field-input[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--text);
+}
+.field-input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-12);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-md);
+}

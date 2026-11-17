@@ -1,0 +1,71 @@
+# Verification: architecture v0.3 against review v0.2 (B1–B6)
+
+Reviewer: `lead-architect` · 2026-11-11 · **Verdict: APPROVE WITH CHANGES** (V1–V3 must be fixed before the first migration)
+
+| # | Status | Evidence |
+|---|---|---|
+| B1 | RESOLVED | arch §4.2 and §4.3 `set_habit_status` (pause/archive = today+1, resume = today); spec AC-H4/H5/H8; testing H18. Stale comment at §4.1 `habit_status_events.effective_on` ("always = local today") needs fixing. |
+| B2 | PARTIALLY | §4.2 `server_today` closes pre-logging, but see V1. |
+| B3 | RESOLVED | §4.1 `unique (id, user_id)` and composite FK on `completion_voids`; §4.3 `void_completion` accepts only `undo`/`correction` within today−7. |
+| B4 | RESOLVED | §4.2 shared `private.entry_lock_key`; §4.3 `replace_with_full` checks owner, non-voided, minimum, window and active status, and runs in one transaction. |
+| B5 | PARTIALLY | Design is right (§4.3, testing H17), but the grants SQL is defective (V2). Deviating to the `p_now` clock is accepted, and it's better than `app_now()`. |
+| B6 | RESOLVED | §4.4 widens the window and has the DB return `today`; §6 lists every requested function. Blocked in practice by V3. |
+
+## New blocking findings
+
+**V1. `server_today` min still lets users evade "late"** (§4.2, §4.3 pseudo-code). My B2 fix was wrong. At 01:00 UTC on D+1, a user can switch to UTC−12, where min(today) = D, and log D as `on_time`. Repeated switching gives a permanent window extension of about 12 h. Using the min also stretches the lower bound back by a day. *Fix:* `server_today` returns `lo` (min) and `hi` (max). Upper bounds use `lo`, lower bounds (`− 7`) use `hi`, and `source = on_time` only if `d = hi`. `get_today` returns `lo`. If no event rows exist, fall back to `profiles.timezone` (today a NULL fails closed). Same D2 trade-off.
+
+**V2. The grants SQL fails or does nothing** (§4.3 grants block).
+- `revoke all on all tables, functions, sequences in schema public` is a syntax error. Write one statement per object type.
+- Postgres can't revoke the global PUBLIC EXECUTE default per schema, so the function line is a no-op. Add `alter default privileges for role postgres revoke execute on functions from public;` with no `in schema`, and use `for role postgres` on every line.
+
+**V3. INVOKER reads can't reach `private`** (§4.3 and §4.4). `get_today`/`get_progress` run as `authenticated`, which has no USAGE on `private`. As a result, `server_today` and the `p_now` injection fail. *Fix:* grant `usage on schema private` and `execute` on the INVOKER read helpers only to `authenticated`, keep `private` out of the exposed schemas, and extend H17 to check that no `private` DEFINER function is executable by `authenticated`.
+
+Note: ADRs 0002/0003/0006 don't exist yet. They're needed before Phase 1.
+
+## Re-verification (V1–V3)
+
+| # | Status | Evidence |
+|---|---|---|
+| V1 | RESOLVED | §4.2 `server_today → (lo, hi)`: upper bound is `lo`, lower bound is `hi − 7`, `on_time` only if `d = hi`, falls back to `profiles.timezone`, and a NULL fails closed. Matching changes are in the §4.3 `log_completion` pseudo-code, spec §3 "Today (server)", AC-O3 and testing H20. |
+| V2 | RESOLVED | The §4.3 grants block has one statement per object type, uses `for role postgres`, and adds the global `revoke execute on functions from public`. H17 checks `pg_default_acl`. |
+| V3 | RESOLVED | §4.3: `authenticated` gets USAGE on `private` and EXECUTE only on `server_today` and `status_on`, both INVOKER under RLS. `private` isn't exposed, and H17 asserts the exact grant set. The §4.1 `effective_on` comment is fixed. |
+
+### New blocking finding
+**V4. The §4.3 RPC table still says "server today"** for the `void_completion`, `replace_with_full`, `set_habit_status`, `change_goal` and `upsert_reflection` rows. Read as `lo`, this reopens two holes:
+- `replace_with_full` labels day `lo` as `on_time` while `lo < hi`, which is the V1 evasion.
+- After switching to UTC+14, pause takes effect at `lo + 1 = hi`, so pausing at 23:59 erases today again (the B1 exploit).
+
+*Fix:* name the bound in each row:
+- void/replace window: `≥ hi − 7`
+- replace `source`: `on_time` only if `d = hi`
+- pause/archive: `hi + 1`
+- resume: `lo`
+- `change_goal` "next week": computed from `hi`
+- reflection: `week_start ≤ lo`
+
+Add the replace and pause cases to H20. This is a text-only fix.
+
+### Non-blocking
+- In the grants block, the `grant execute on function private.*` lines must run after the helpers are created, or the migration fails.
+- `get_today` (§4.4) returns only `lo`. Add `hi` so that `lateLogEligibility` matches the DB window (`hi − 7`) and the on-time preview. Otherwise, in the 24 h after a timezone switch, the picker can offer a day the DB rejects.
+
+## Re-verification (V4)
+
+**V4: RESOLVED.** Evidence:
+- The §4.3 bound-rule preamble covers both cases: `lo` for upper bounds, and `hi` for lower bounds, on-time labels and plan removal.
+- The RPC rows are updated:
+  - `void_completion` and `replace_with_full`: `≥ hi − 7`
+  - `replace_with_full` source: `on_time` only if `d = hi`
+  - `set_habit_status`: `hi + 1` for pause/archive, `lo` for resume
+  - `change_goal`: computed from `hi`
+  - `upsert_reflection`: compared with `lo`
+- The §4.1 comment and the grant-ordering note are in place.
+- §4.4 `get_today` returns both `today` and `today_hi`.
+- H20 covers the replace case and the UTC+14 pause case.
+
+**No new blocking issues.**
+
+**Non-blocking:** the §6 signature `lateLogEligibility(habit, entries, today)` should also take `todayHi`, to match §4.4. Line 194 of §4.2 still says "`get_today` returns `lo`" without mentioning `today_hi`. Both are cosmetic and can be fixed during the Phase 1 contract work.
+
+**Verdict for architecture v0.3: APPROVE.** It's ready for owner approval of D1–D6 and the ADRs 0002/0003/0006, which are required before Phase 1.
